@@ -34,7 +34,7 @@ class AppUpdateManagerTest {
             versionCode = 2,
             name = "Resonance Update",
             releaseNotes = "versionCode: 2",
-            htmlUrl = "https://github.com/bharath9-r/resonance/releases/tag/v1.0.0",
+            htmlUrl = "https://github.com/1ambharath/resonance/releases/tag/v1.0.0",
             apkDownloadUrl = null
         )
         // Explicit versionCode 2 > 1 => Newer
@@ -55,8 +55,8 @@ class AppUpdateManagerTest {
             versionCode = 0,
             name = "Resonance v1.0.1",
             releaseNotes = "Bug fixes and improvements",
-            htmlUrl = "https://github.com/bharath9-r/resonance/releases/tag/v1.0.1",
-            apkDownloadUrl = "https://github.com/bharath9-r/resonance/releases/download/v1.0.1/Resonance.apk"
+            htmlUrl = "https://github.com/1ambharath/resonance/releases/tag/v1.0.1",
+            apkDownloadUrl = "https://github.com/1ambharath/resonance/releases/download/v1.0.1/Resonance.apk"
         )
         // Semantic 1.0.1 > 1.0.0
         assertTrue(AppUpdateManager.isNewerVersion(releaseNoCode, currentVersionCode = 1, currentVersionName = "1.0.0"))
@@ -99,12 +99,12 @@ class AppUpdateManagerTest {
                 "name": "Resonance v1.0.1 - Latency Fixes",
                 "draft": false,
                 "prerelease": false,
-                "html_url": "https://github.com/bharath9-r/resonance/releases/tag/v1.0.1",
+                "html_url": "https://github.com/1ambharath/resonance/releases/tag/v1.0.1",
                 "body": "versionCode: 2\n\n- Fixed audio buffer sync\n- Improved discovery speed",
                 "assets": [
                     {
                         "name": "Resonance-v1.0.1.apk",
-                        "browser_download_url": "https://github.com/bharath9-r/resonance/releases/download/v1.0.1/Resonance-v1.0.1.apk"
+                        "browser_download_url": "https://github.com/1ambharath/resonance/releases/download/v1.0.1/Resonance-v1.0.1.apk"
                     }
                 ]
             }
@@ -116,7 +116,7 @@ class AppUpdateManagerTest {
         assertEquals("1.0.1", parsed.versionName)
         assertEquals(2, parsed.versionCode)
         assertEquals("Resonance v1.0.1 - Latency Fixes", parsed.name)
-        assertEquals("https://github.com/bharath9-r/resonance/releases/download/v1.0.1/Resonance-v1.0.1.apk", parsed.apkDownloadUrl)
+        assertEquals("https://github.com/1ambharath/resonance/releases/download/v1.0.1/Resonance-v1.0.1.apk", parsed.apkDownloadUrl)
     }
 
     @Test

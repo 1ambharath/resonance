@@ -12,7 +12,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 ### 1. Reporting Bugs
 Before filing a bug report:
-- Check existing issues in the [Issue Tracker](https://github.com/bharath9-r/resonance/issues) to avoid duplicates.
+- Check existing issues in the [Issue Tracker](https://github.com/1ambharath/resonance/issues) to avoid duplicates.
 - Ensure the issue is reproducible on a supported setup (Android 10+ / API 29+).
 - Review [docs/limitations.md](docs/limitations.md) to verify whether the behavior is an intentional OS policy restriction (such as Widevine DRM audio capture blocking or app-level capture opt-out).
 

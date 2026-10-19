@@ -13,7 +13,7 @@
 
 If you discover a security vulnerability in Resonance, please do not file a public issue. Instead, report it privately to the project maintainers via GitHub Security Advisories:
 
-👉 **[Report a Security Vulnerability](https://github.com/bharath9-r/resonance/security/advisories/new)**
+👉 **[Report a Security Vulnerability](https://github.com/1ambharath/resonance/security/advisories/new)**
 
 Include the following in your report:
 - A description of the vulnerability.
@@ -36,5 +36,5 @@ You should receive an acknowledgment within 48 hours.
    - No sensitive information (passwords, contacts, credentials) is ever broadcast or collected.
 
 3. **In-App Update Verification**:
-   - Update checks communicate solely via HTTPS with the public GitHub REST API (`https://api.github.com/repos/bharath9-r/resonance/releases/latest`).
+   - Update checks communicate solely via HTTPS with the public GitHub REST API (`https://api.github.com/repos/1ambharath/resonance/releases/latest`).
    - Downloads are redirected to GitHub Releases, and the Android Package Manager enforces cryptographic signature matching before allowing any update to install over an existing installation.

@@ -10,7 +10,7 @@ object UpdateConfig {
      * GitHub repository owner (username or organization).
      * Set to the repository owner where Resonance is hosted.
      */
-    var GITHUB_OWNER: String = "bharath9-r"
+    var GITHUB_OWNER: String = "1ambharath"
 
     /**
      * GitHub repository name.

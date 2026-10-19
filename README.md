@@ -1,178 +1,381 @@
 # Resonance
 
 <p align="center">
+  <img src="docs/images/logo.png" alt="Resonance Logo" width="160" />
+</p>
+
+<p align="center">
   <strong>Low-Latency Multi-Device Audio Sharing for Android</strong><br>
-  <em>"SAME SOUND. SAME SECOND. Together forever. ❤️"</em>
+  <em>Explore software-driven audio sharing between companion Android devices and Bluetooth headsets.</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/tagline_banner.png" alt="SAME SOUND. SAME SECOND. Together forever." width="440" />
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="Apache 2.0 License" /></a>
+  <a href="https://developer.android.com/about/versions/10"><img src="https://img.shields.io/badge/Android-10%2B_(API_29%2B)-green.svg" alt="Android 10+" /></a>
+  <a href="app/build.gradle.kts"><img src="https://img.shields.io/badge/Kotlin-2.2.10-purple.svg" alt="Kotlin 2.2.10" /></a>
+  <a href="https://github.com/1ambharath/resonance/releases"><img src="https://img.shields.io/badge/Release-v1.0.0-orange.svg" alt="Release v1.0.0" /></a>
+  <img src="https://img.shields.io/badge/Tests-13_Passed-success.svg" alt="13 Tests Passed" />
 </p>
 
 ---
 
-## 📖 Overview
+## 📑 Table of Contents
 
-**Resonance** is an open-source, low-latency audio sharing application built for Android. It enables an Android device (phone or tablet) playing media to capture and stream its playback audio in real time over local Wi-Fi to up to five receiver devices simultaneously.
-
-### Why Resonance Was Created
-Watching a movie, series, or video together in public spaces (trains, flights, cafes, study rooms) often requires sharing one pair of earbuds or carrying bulky hardware audio splitters. Bluetooth multi-sharing is notoriously restricted on many Android devices and vendor-locked. Resonance eliminates this barrier with a pure software solution: one device plays the video and streams the audio across the local Wi-Fi network to companion devices running Resonance in Receiver mode with sub-50ms synchronization.
-
-Resonance is distributed independently and exclusively through **GitHub Releases**—free of logins, tracking, or Google Play Store dependencies.
-
----
-
-## ✨ Features
-
-- **Unified Sender & Receiver**: Switch between audio broadcasting (Sender Mode) and listening (Receiver Mode) with a single tap.
-- **Auto-Discovery via mDNS**: Receivers on the same local Wi-Fi network are automatically discovered and displayed without manual configuration.
-- **Manual IP Fallback**: Direct IP entry ensures connectivity even on complex or restricted Wi-Fi networks.
-- **Multi-Device Broadcast**: Stream to up to 5 concurrent receivers in real time.
-- **Real-Time Audio Diagnostics**: Live RMS dBFS level monitoring, silence detection, frame counters, and throughput bandwidth meters.
-- **Built-in APK Sharing**: Share the installed Resonance APK directly to nearby friends via Bluetooth or Quick Share with a single tap.
-- **GitHub-Based Updates**: In-app notifications when a newer stable version is published on GitHub Releases, directing users to download the update with zero friction.
-- **Cream Neobrutalist UI**: Handcrafted, tactile design system with bold outlines, subtle shadows, and responsive micro-interactions.
-
----
-
-## ⚠️ Limitations & Prerequisites
-
-1. **Local Wi-Fi Network**: Both sender and receiver devices must be connected to the same Wi-Fi network that allows device-to-device communication (disable Client/AP Isolation on the router).
-2. **Audio Playback Capture**: Android's `AudioPlaybackCapture` captures standard media playback from apps that allow it (e.g., VLC, MX Player, Chrome, YouTube). Content protected by DRM (Widevine L1 hardware DRM) cannot be captured per Android OS security policies.
-3. **Android Version**: Requires Android 10 (API 29) or higher for audio capture support.
-4. **Network Jitter**: For optimal latency (<50ms), a 5 GHz Wi-Fi band or mobile hotspot hosted directly from the sender device is recommended.
+- [Overview & Motivation](#-overview--motivation)
+- [The Problem & The Software Idea](#-the-problem--the-software-idea)
+- [How Resonance Works](#-how-resonance-works)
+- [Technical Architecture](#-technical-architecture)
+- [Key Features](#-key-features)
+- [What Resonance Does Well](#-what-resonance-does-well)
+- [Honest Limitations & Known Constraints](#-honest-limitations--known-constraints)
+- [Feature Implementation Status](#-feature-implementation-status)
+- [Screenshots & Visual Tour](#-screenshots--visual-tour)
+- [Download & Installation](#-download--installation)
+- [Step-by-Step Setup Guide](#-step-by-step-setup-guide)
+- [Android Permissions Explained](#-android-permissions-explained)
+- [Build from Source](#-build-from-source)
+- [Testing & Quality Verification](#-testing--quality-verification)
+- [Troubleshooting](#-troubleshooting)
+- [Privacy & Security](#-privacy--security)
+- [References & Inspiration](#-references--inspiration)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Roadmap](#-roadmap)
+- [Acknowledgements](#-acknowledgements)
 
 ---
 
-## 📥 Installation
+## 📖 Overview & Motivation
 
-Resonance is distributed exclusively as an APK via GitHub Releases:
+**Resonance** is an open-source, reproducible Android engineering project exploring software-based audio sharing across local devices. 
 
-1. Navigate to the official releases page:  
-   👉 **[Download Latest Resonance APK](https://github.com/bharath9-r/resonance/releases/latest)**
-2. Download the `Resonance-vX.Y.Z.apk` file.
-3. When prompted by Android, tap the downloaded file to install.
-4. If installing an APK from your browser for the first time:
-   - Go to **Settings > Apps > Special app access > Install unknown apps**.
-   - Select your browser (e.g., Chrome) and enable **Allow from this source**.
-5. Open Resonance and start sharing audio!
+Sharing media playback audio (movies, series, lectures) between two people wearing separate Bluetooth headsets in public settings (airplanes, train rides, coffee shops, libraries) is a common dilemma. Many Android devices lack native dual-Bluetooth audio broadcasting, vendor-specific dual-audio solutions are incompatible across brands, and carrying external 3.5mm Bluetooth audio splitter dongles is inconvenient.
+
+Resonance addresses this challenge using devices you already carry: **an Android tablet/phone running as a Sender and a companion Android phone running as a Receiver**, transmitting real-time uncompressed audio over local Wi-Fi.
 
 ---
 
-## 🔄 How In-App Updates Work
+## 💡 The Problem & The Software Idea
 
-Resonance implements a lightweight, login-free update notification system:
+### The Problem
+- **Dual-Audio Fragmentation**: While certain Android manufacturers offer dual Bluetooth output, these implementations are often proprietary, restricted to identical ecosystem earbuds, or omitted entirely on tablets and budget phones.
+- **Hardware Splitters**: Hardware adapters require physical cables, audio jack dongles, or battery-operated external transmitters.
 
-1. **Automatic Startup Check**: When the app launches, Resonance checks the public GitHub Releases API asynchronously in the background. It never blocks startup or delays streaming.
-2. **Manual Check**: Tap **🔄 CHECK UPDATES** under the **ABOUT & UPDATES** card on the main screen anytime.
-3. **Smart Caching**: API responses are cached locally for 6 hours to prevent hitting GitHub unauthenticated rate limits. Manual checks bypass the cache.
-4. **Update Available Dialog**: When a newer version is detected:
-   - Displays the installed version vs. the latest available version.
-   - Shows formatted release notes directly inside the dialog.
-   - Tapping **UPDATE NOW** opens the release page in your default browser.
-   - Tapping **LATER** dismisses the prompt for that entire session.
-5. **Native Android Installation**: The user downloads the APK from GitHub and confirms installation through Android's standard package installer. Existing app data, preferences, and receiver lists are preserved.
+### The Software Idea
+Resonance treats two Android devices as synchronized wireless endpoints:
+1. **Device A (Sender)**: Plays a video or music stream, captures permitted audio via Android's native `AudioPlaybackCapture` API, and transmits it as lightweight UDP packets across the local network.
+2. **Device B (Receiver)**: Listens for the audio stream, buffers incoming PCM frames in a 1 ms precision linear jitter FIFO, and outputs the audio through its own connected Bluetooth headset.
+3. **Manual Delay Calibration**: A millisecond-level delay slider allows users to align the two headsets, compensating for differing Bluetooth codec latencies (e.g., aptX vs AAC vs SBC).
 
----
-
-## 🛠️ Maintainer Guide: Versioning, Signing & Releases
-
-### 1. Release Signing Identity
-> [!IMPORTANT]
-> Always use the **exact same signing keystore** for all releases. If the signing certificate changes, Android will refuse to install updates over existing installations (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
-
-To create or configure your release keystore:
-1. Generate a keystore (if not already done):
-   ```bash
-   keytool -genkey -v -keystore resonance-release.jks -alias resonance -keyalg RSA -keysize 2048 -validity 10000
-   ```
-2. Store the keystore securely. **Never commit `.jks`, `.keystore`, or signing passwords to Git.**
-3. Configure `gradle.properties` (or CI environment variables):
-   ```properties
-   RELEASE_STORE_FILE=/path/to/resonance-release.jks
-   RELEASE_STORE_PASSWORD=your_keystore_password
-   RELEASE_KEY_ALIAS=resonance
-   RELEASE_KEY_PASSWORD=your_key_password
-   ```
-
-### 2. Versioning Conventions
-Update `app/build.gradle.kts` for every release:
-- **`versionCode`** *(Integer)*: Increment by 1 for every published release (e.g., `1`, `2`, `3`). This is the primary value used by Android and `AppUpdateManager` to detect updates.
-- **`versionName`** *(String)*: Follow [Semantic Versioning](https://semver.org) (`MAJOR.MINOR.PATCH`, e.g., `1.0.0`, `1.0.1`, `1.1.0`).
-
-### 3. Step-by-Step GitHub Release Workflow
-
-1. **Prepare the codebase**:
-   - Increment `versionCode` and update `versionName` in `app/build.gradle.kts`.
-   - Update `UpdateConfig.kt` if the repository owner or name changes.
-   - Run unit tests:
-     ```bash
-     ./gradlew testDebugUnitTest
-     ```
-2. **Build and sign the release APK**:
-   ```bash
-   ./gradlew assembleRelease
-   ```
-   The signed APK will be generated at:
-   `app/build/outputs/apk/release/app-release.apk`
-   Rename it descriptively (e.g., `Resonance-v1.0.1.apk`).
-
-3. **Tag the commit**:
-   ```bash
-   git tag -a v1.0.1 -m "Release v1.0.1"
-   git push origin v1.0.1
-   ```
-
-4. **Create GitHub Release**:
-   - Go to your repository's **Releases** page (`https://github.com/<owner>/resonance/releases/new`).
-   - Select tag `v1.0.1`.
-   - Title the release: `Resonance v1.0.1`.
-   - In the release description, include the `versionCode` for instant parsing:
-     ```markdown
-     versionCode: 2
-
-     ### Changes in this release
-     - Ultra-low latency stereo audio pipeline optimizations
-     - Improved Wi-Fi reconnection handling
-     - Fixed occasional buffer underrun on Android 14
-     ```
-   - Attach the signed APK (`Resonance-v1.0.1.apk`).
-   - Ensure **Set as a pre-release** and **Set as a draft** are **unchecked**.
-   - Click **Publish release**.
-
-5. **Verify**:
-   - Existing installations of Resonance will automatically detect the update on next launch (or when tapping **🔄 CHECK UPDATES**) and present the update dialog linking directly to the new release.
+> [!NOTE]
+> *Exploratory Setup*: The project was conceptually motivated by pairing a **OnePlus Pad 2** (tablet sender) with a **Nothing Phone (3)** (phone receiver), using **Nothing Ear (2)** and **Sony WH-CH520** headsets. Resonance does not claim this exact hardware combination is lab-certified; it provides an inspectable codebase to test and calibrate multi-device setups.
 
 ---
 
-## 🤖 Automated CI/CD (GitHub Actions)
+## ⚙️ How Resonance Works
 
-Resonance includes an automated GitHub Actions workflow in [`.github/workflows/release.yml`](.github/workflows/release.yml).
+Resonance packages both **Sender** and **Receiver** capabilities inside a single unified APK (`com.br.resonance`):
 
-Whenever a tag starting with `v*` is pushed:
-1. Sets up JDK 17 and Android SDK.
-2. Runs unit tests (`./gradlew testDebugUnitTest`).
-3. Assembles the release APK.
-4. Creates a GitHub Release and attaches the APK automatically.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Sender Device (OnePlus Pad 2)
+    participant N as Local Network (5 GHz Wi-Fi / Hotspot)
+    participant R as Receiver Device (Nothing Phone 3)
 
-To enable automated signing in CI:
-- Add secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` in your GitHub repository's **Settings > Secrets and variables > Actions**.
+    Note over R: Receiver starts Listening on UDP 50005
+    R->>N: Broadcast discovery beacon (mDNS / UDP 50006)
+    N-->>S: Sender discovers Receiver automatically
+    Note over S: User grants MediaProjection Consent
+    Note over S: AudioPlaybackCapture records 24kHz Mono PCM
+    loop Every 20ms Frame
+        S->>N: Send 1000-byte UDP Datagram (40B Header + 960B PCM)
+        N->>R: Deliver UDP Datagram
+        R->>R: JitterDelayBuffer aligns & trims delay
+        R->>R: AudioTrack plays audio into Bluetooth Headset
+    end
+```
+
+---
+
+## 🏛️ Technical Architecture
+
+```mermaid
+graph LR
+    subgraph "Sender Architecture"
+        direction TB
+        A[Media Player] --> B[MediaProjection]
+        B --> C[AudioPlaybackCapture]
+        C --> D[AudioRecord: 24kHz Mono]
+        D --> E[AudioAnalyzer: RMS dBFS]
+        D --> F[AudioPacket Encoder]
+        F --> G[DatagramSocket: Port 50005]
+    end
+
+    subgraph "Wi-Fi Transport"
+        G -->|"UDP Unicast (~1000B frames)"| H[DatagramSocket: Port 50005]
+    end
+
+    subgraph "Receiver Architecture"
+        direction TB
+        H --> I[ReceivedAudioPacket Decoder]
+        I --> J["JitterDelayBuffer (Dynamic 1ms FIFO)"]
+        J --> K[AudioTrack: Low Latency Stream]
+        K --> L[Bluetooth Headset / Speaker]
+    end
+```
+
+For complete technical specifications, threading models, and packet schemas, see [docs/architecture.md](docs/architecture.md).
+
+---
+
+## ✨ Key Features
+
+- **Unified Single-APK Application**: Switch effortlessly between **Sender Mode** and **Receiver Mode** with a single tap.
+- **Native OS Capture**: Captures system media audio on Android 10+ using `MediaProjection` and `AudioPlaybackCaptureConfiguration`.
+- **Low-Latency UDP Streaming**: Streams raw 16-bit PCM at 24,000 Hz in 20 ms frames without heavyweight compression latency.
+- **Multi-Device Broadcast**: Sender can stream concurrent audio to up to **5 receiver devices** simultaneously.
+- **1-Millisecond Jitter & Delay Buffer**: Playout buffer with instant millisecond byte-trimming FIFO for manual relative delay adjustment.
+- **Hybrid Auto-Discovery**: Discovers nearby receivers via Android Network Service Discovery (mDNS `_dualaudio._udp.`) and UDP broadcast beacons on port 50006.
+- **Manual IP Fallback**: Direct IP entry with persistent memory for networks that restrict multicast discovery.
+- **Screen-Off Resilience**: Dedicated `PlaybackService` holding `PARTIAL_WAKE_LOCK` and `WIFI_MODE_FULL_HIGH_PERF` to prevent playback starvation when the receiver's screen is locked.
+- **Live Diagnostics**: Real-time meters for RMS dBFS levels, silence detection, frame counters, throughput, and buffer depths.
+- **Built-in APK Sharing**: Share the installed APK directly with companion devices via Quick Share or Bluetooth via `ApkFileProvider`.
+- **In-App GitHub Update Engine**: Lightweight, rate-limited check against the GitHub Releases API with native install prompts.
+- **Cream Neobrutalist UI**: Handcrafted custom theme featuring bold 2px ink-black outlines, hard offset drop shadows, and responsive micro-interactions.
+
+---
+
+## 💎 What Resonance Does Well
+
+1. **Leverages Hardware You Already Own**: Eliminates the need to buy or carry external audio splitters or dongles.
+2. **Zero Cloud Infrastructure & 100% Offline**: Operates purely over local Wi-Fi or mobile hotspots without logins, accounts, telemetry, or internet access.
+3. **Decoupled Roles**: Separates media playback and capture from playout, allowing any phone to act as an auxiliary audio sink.
+4. **Fine-Grained Latency Tuning**: The 1 ms linear byte-trimming FIFO allows users to nudge relative timing until dialogue is in perfect sync across disparate Bluetooth headsets.
+5. **Inspectable & Fully Open-Source**: Clear, dependency-free Kotlin codebase designed for learning, testing, and community improvements.
+
+---
+
+## ⚠️ Honest Limitations & Known Constraints
+
+> [!WARNING]
+> Please review these technical constraints before deployment. Do not expect universal capture across all Android media applications.
+
+1. **DRM Protected Content is Blocked by Android**:
+   - Audio from streaming services protected by hardware DRM (such as Netflix, Amazon Prime Video, Disney+, or Widevine L1 protected media) **cannot be captured** due to Android OS security architecture.
+2. **Granting Consent Does Not Guarantee Audio Samples**:
+   - Any app developer can opt out of playback capture by setting `setAllowedCapturePolicy(ALLOW_CAPTURE_BY_NONE)` or adding `android:allowAudioPlaybackCapture="false"` in their manifest. If an app opts out, Resonance captures silence.
+   - Standard players like **VLC, MX Player, YouTube, and Chromium** permit capture.
+3. **Receiver Delay Can Only Add Latency, Not Pre-Play Audio**:
+   - Receiver delay adjustments can delay receiver playout to match a slower sender Bluetooth headset. However, the receiver **cannot play audio earlier than its minimum physical latency floor** (~20–40 ms).
+4. **Mono 24 kHz Downmixing**:
+   - Audio is transmitted in mono 16-bit PCM at 24,000 Hz (384 kbps) to ensure packets remain well below network MTU limits without packet fragmentation. Stereo separation is currently omitted.
+5. **UDP Packet Drops on Noisy Wi-Fi**:
+   - To preserve sub-50ms synchronization, dropped packets are discarded rather than retransmitted.
+   - **Recommendation**: In congested Wi-Fi environments, host a **Mobile Hotspot** from the Sender device.
+
+For a full breakdown of platform restrictions, consult [docs/limitations.md](docs/limitations.md).
+
+---
+
+## 📊 Feature Implementation Status
+
+| Feature | Status | Notes |
+| :--- | :--- | :--- |
+| **Unified Mode Toggle** | Implemented and Tested | Single APK switchable between Sender & Receiver |
+| **Audio Playback Capture** | Implemented and Tested | Tested on Android 10+ with standard media apps |
+| **Jitter Playout Buffer** | Implemented and Tested | 7 automated unit tests verify 1ms byte trimming |
+| **Real-Time Diagnostics** | Implemented and Tested | RMS dBFS, peak %, frames, throughput meters |
+| **In-App Update Engine** | Implemented and Tested | 6 automated unit tests verify GitHub API parsing |
+| **In-App APK Sharing** | Implemented and Tested | One-tap Quick Share via FileProvider |
+| **Multi-Receiver Stream** | Implemented (Multi-device unverified) | Code supports 5 targets; verified on single-device loops |
+| **Auto-Discovery** | Implemented (Multi-device unverified) | mDNS & UDP beacon; manual IP fallback available |
+| **Opus Audio Compression** | Planned | Future roadmap to reduce 2.4 GHz bandwidth |
+| **Widevine L1 DRM Capture** | Unsupported | Blocked by Android OS security policy |
+
+---
+
+## 📱 Screenshots & Visual Tour
+
+> All screenshots reflect the genuine Resonance application running on Android (API 36 / 1080x2400):
+
+| Resonance Sender Mode (Home) | Architecture Data Flow |
+| :---: | :---: |
+| <img src="docs/screenshots/01_sender_home.png" alt="Resonance Sender Home Screen" width="340" /> | <img src="docs/images/logo.png" alt="Resonance Architecture" width="220" /> |
+| *Sender Mode showing 5 receiver slots, transmission diagnostics, and capture controls* | *Resonance branding & audio relay flow* |
+
+*Note: Dual-device live stream calibration screenshots require physical multi-device camera setups and are documented in [docs/testing.md](docs/testing.md).*
+
+---
+
+## 📥 Download & Installation
+
+Resonance is distributed independently via **GitHub Releases** without Google Play Store dependencies:
+
+👉 **[Download Latest Resonance APK (v1.0.0)](https://github.com/1ambharath/resonance/releases/latest)**
+
+### Release Artifacts & Cryptographic Checksums
+
+| Artifact | File Size | Build Type | SHA-256 Checksum |
+| :--- | :--- | :--- | :--- |
+| **`app-release.apk`** | ~3.19 MB | Release (v2 Signed) | `699A7C367CE60D80CAA3221B9D632DA06C84994C638EF7FA6DBE215443ECB58F` |
+| **`app-debug.apk`** | ~4.06 MB | Debug | `4570CDACAAD6FA0D958968F12C606B4887119CDA1DC692386CB0EC1BA853BD54` |
+
+### Installation Instructions
+1. Download `app-release.apk` directly onto your Android device.
+2. Tap the downloaded `.apk` file.
+3. If prompted by Android, grant **Allow from this source** in **Settings > Special app access > Install unknown apps**.
+4. Tap **Install** or **Update**. All local settings and receiver IPs will be preserved across updates.
+
+---
+
+## 🚀 Step-by-Step Setup Guide
+
+### 1. Network Preparation
+- Connect both devices to the same **5 GHz Wi-Fi** network, **OR**
+- Turn on **Mobile Hotspot** on the Sender device and connect the Receiver device to it.
+
+### 2. Configure Receiver Device
+1. Open Resonance and tap **RECEIVER MODE**.
+2. Tap **START LISTENING**. The app enters foreground playback mode.
+3. Pair and connect your Bluetooth headset to the Receiver device.
+
+### 3. Configure Sender Device
+1. Open Resonance and select **SENDER MODE**.
+2. The Receiver device will appear automatically under **CONNECTED RECEIVERS** via auto-discovery (or enter the Receiver's IP manually and tap **+ ADD**).
+3. Tap **START AUDIO SHARING**.
+4. When Android prompts for screen/audio capture consent, tap **Start now**.
+5. Pair and connect your Bluetooth headset to the Sender device.
+
+### 4. Play Media & Calibrate Delay
+1. Launch your media player (e.g. VLC, MX Player, or browser video) on the Sender.
+2. Listen to audio in both headsets.
+3. Adjust the **SYNC OFFSET** slider or tap the **-10ms / +10ms** micro-nudge buttons on the Receiver until dialogue aligns cleanly without echo.
+
+---
+
+## 🔒 Android Permissions Explained
+
+| Permission | Purpose |
+| :--- | :--- |
+| `RECORD_AUDIO` | Required by Android to create an `AudioRecord` instance with `AudioPlaybackCaptureConfiguration`. |
+| `FOREGROUND_SERVICE` | Keeps audio capture and playout active when the app is minimized. |
+| `FOREGROUND_SERVICE_MEDIA_PROJECTION` | Explicit Android 14+ permission for system audio capture services. |
+| `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Explicit Android 14+ permission for background receiver audio playout. |
+| `INTERNET` & `ACCESS_NETWORK_STATE` | Sends and receives local UDP audio datagrams and queries GitHub Releases for updates. |
+| `CHANGE_WIFI_MULTICAST_STATE` | Allows receiving mDNS and UDP broadcast beacons for automatic discovery. |
+| `WAKE_LOCK` | Holds a partial CPU wake lock on the Receiver to prevent audio drops when the screen locks. |
+| `BLUETOOTH_CONNECT` | Inspects connected Bluetooth audio devices and routes playback smoothly. |
+| `POST_NOTIFICATIONS` | Displays required foreground service notifications on Android 13+. |
+
+---
+
+## 💻 Build from Source
+
+### Prerequisites
+- **JDK 21**
+- **Android SDK** (API 29 to 36, build-tools 35.0.0+)
+- Gradle 8.13 (configured via included `./gradlew` wrapper)
+
+### Build Steps
+```bash
+# Clone the repository
+git clone https://github.com/1ambharath/resonance.git
+cd resonance
+
+# Configure Android SDK location
+echo "sdk.dir=/path/to/android/sdk" > local.properties
+
+# Run unit tests
+./gradlew testDebugUnitTest
+
+# Assemble Release APK
+./gradlew assembleRelease
+```
+The output APK is generated at `app/build/outputs/apk/release/app-release.apk`.
+
+---
+
+## 🧪 Testing & Quality Verification
+
+Resonance includes 13 automated unit tests covering audio encoding, packet validation, and update parsing:
+```bash
+./gradlew testDebugUnitTest
+```
+For instructions on emulator testing and physical dual-device verification protocols, refer to [docs/testing.md](docs/testing.md).
 
 ---
 
 ## 🩺 Troubleshooting
 
-### "App not installed as package appears to be invalid" / Incompatible Signature
-- **Cause**: The newly downloaded APK was signed with a different key than the installed version (e.g., upgrading from a debug build to a release build).
-- **Fix**: Uninstall the existing debug version first, then install the release APK. All future release APKs signed with the same key will update seamlessly without data loss.
+### Receiver Shows "Stream active (silent audio)"
+- **Cause**: The media player app has opted out of playback capture, or content is DRM-protected.
+- **Fix**: Test with VLC or a non-DRM video in your browser. Ensure the media volume on the Sender device is not muted.
 
-### Update check shows "Could not connect to GitHub"
-- **Cause**: The device has no active internet connection, or GitHub's unauthenticated API rate limit (60 requests/hour per IP) has been reached.
-- **Fix**: Check Wi-Fi/mobile data. Resonance caches responses for 6 hours to minimize API usage. The app remains fully functional even when offline.
+### "No active receivers found" on Sender
+- **Cause**: Wi-Fi router has AP/Client Isolation enabled, blocking peer-to-peer UDP and mDNS.
+- **Fix**: Use the **Manual IP** input on the Sender to connect directly, or create a mobile hotspot on the Sender device.
 
-### "No active receivers found"
-- Ensure both devices are connected to the same Wi-Fi network.
-- Disable AP/Client Isolation in your Wi-Fi router settings, or create a mobile hotspot on the sender device and connect the receiver to it.
-- Use the **Manual IP** input if your router blocks UDP multicast/mDNS.
+### Audio Drops When Receiver Screen Turns Off
+- **Cause**: Aggressive OEM battery optimization killed the background playback service.
+- **Fix**: Open Android **App Info > Battery > Unrestricted** for Resonance on the Receiver device.
+
+---
+
+## 🔐 Privacy & Security
+
+- **No Remote Servers**: Resonance never transmits audio samples or diagnostic metrics over the internet. All streaming occurs on the local LAN.
+- **Unencrypted Local UDP**: Audio datagrams are transmitted as unencrypted raw PCM across port 50005. Resonance is intended for trusted private home networks or personal mobile hotspots.
+- For vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
+---
+
+## 💡 References & Inspiration
+
+### Reference Project: CenturyPlay
+- **Project**: [centuryplay](https://github.com/g8row/centuryplay) by `@g8row`
+- **Relevance**: Demonstrated the feasibility of utilizing Android's `AudioPlaybackCapture` API to route system audio wirelessly to external audio targets.
+- **How Resonance Differs**:
+  - *Target Architecture*: CenturyPlay is an AirPlay client (streaming ALAC audio via RAOP/AirPlay 1 & 2 protocols to Apple speakers and Shairport-sync). Resonance is an independent **Android-to-Android** system streaming raw PCM over a custom UDP protocol to companion Android devices.
+  - *Single Unified APK*: Resonance includes both Sender and Receiver roles in a single codebase with dynamic 1 ms delay calibration.
+  - *Licensing & Code*: CenturyPlay is licensed under GNU AGPL-3.0. **Resonance does not contain any code, assets, or dependencies copied or adapted from CenturyPlay.** Resonance is an independent implementation licensed under Apache 2.0.
+
+### Official Android Documentation
+- [Audio playback capture](https://developer.android.com/guide/topics/media/playback-capture) (`AudioPlaybackCaptureConfiguration`)
+- [MediaProjection API](https://developer.android.com/reference/android/media/projection/MediaProjection)
+- [AudioRecord](https://developer.android.com/reference/android/media/AudioRecord) & [AudioTrack](https://developer.android.com/reference/android/media/AudioTrack)
+- [Foreground Services](https://developer.android.com/guide/components/foreground-services)
+- [Network Service Discovery (mDNS)](https://developer.android.com/training/connect-devices-wirelessly/nsd)
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening pull requests.
 
 ---
 
 ## 📄 License
 
-Resonance is free and open-source software distributed under the Apache 2.0 License.
+Resonance is free and open-source software licensed under the **[Apache License 2.0](LICENSE)**.
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Stereo audio pipeline support (two-channel 16-bit PCM).
+- [ ] Optional Opus codec compression for bandwidth-constrained 2.4 GHz networks.
+- [ ] Wi-Fi Direct (P2P) autonomous group connection without an external router.
+- [ ] Auracast / Bluetooth LE Audio broadcast exploration.
+
+---
+
+## 💖 Acknowledgements
+
+- Built with Kotlin and modern Android APIs.
+- Special thanks to the Android open-source audio research community.
+- *"SAME SOUND. SAME SECOND. Together forever. ❤️"*
