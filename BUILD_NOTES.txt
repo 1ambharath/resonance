@@ -1,0 +1,4 @@
+Gradle wrapper (Gradle 8.13) is now configured.
+Build directly with:
+  ./gradlew assembleDebug
+Or open in Android Studio and run 'sender' on the OnePlus Pad 2.

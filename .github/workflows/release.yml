@@ -1,0 +1,68 @@
+name: Build & Publish Release APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build APK and Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant Execute Permission to Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Prepare Release Artifact
+        run: |
+          mkdir -p release-assets
+          cp app/build/outputs/apk/release/app-release-unsigned.apk release-assets/Resonance-${{ github.ref_name }}.apk 2>/dev/null || \
+          cp app/build/outputs/apk/release/app-release.apk release-assets/Resonance-${{ github.ref_name }}.apk 2>/dev/null || \
+          cp app/build/outputs/apk/debug/app-debug.apk release-assets/Resonance-${{ github.ref_name }}.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/Resonance-${{ github.ref_name }}.apk
+          name: "Resonance ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ### Resonance ${{ github.ref_name }}
+            
+            Multi-device low-latency audio relay for Android.
+            
+            #### How to Install:
+            1. Download `Resonance-${{ github.ref_name }}.apk` below.
+            2. Open the downloaded APK on your Android device.
+            3. If prompted, allow installation from this source.
+            4. Tap **Install** or **Update**. Local settings will be preserved!
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
