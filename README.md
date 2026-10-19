@@ -203,10 +203,10 @@ For a full breakdown of platform restrictions, consult [docs/limitations.md](doc
 
 > All screenshots reflect the genuine Resonance application running on Android (API 36 / 1080x2400):
 
-| Resonance Sender Mode (Home) | Architecture Data Flow |
+| Resonance Receiver Mode & Delay Tuning | Architecture Data Flow |
 | :---: | :---: |
-| <img src="docs/screenshots/01_sender_home.png" alt="Resonance Sender Home Screen" width="340" /> | <img src="docs/images/logo.png" alt="Resonance Architecture" width="220" /> |
-| *Sender Mode showing 5 receiver slots, transmission diagnostics, and capture controls* | *Resonance branding & audio relay flow* |
+| <img src="docs/screenshots/01_sender_home.png" alt="Resonance Receiver Mode & Delay Tuning" width="340" /> | <img src="docs/images/logo.png" alt="Resonance Architecture" width="220" /> |
+| *Receiver Mode on Nothing Phone (A024) showing dynamic sync offset slider, 1 ms fine-tuning nudges, and playout diagnostics* | *Resonance branding & audio relay flow* |
 
 *Note: Dual-device live stream calibration screenshots require physical multi-device camera setups and are documented in [docs/testing.md](docs/testing.md).*
 
