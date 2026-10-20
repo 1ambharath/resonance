@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Resonance — Low-Latency Web Audio Link</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Fullscreen OLED Pocket / Cinema Mode Overlay -->
+  <div id="pocketOverlay" class="pocket-overlay hidden">
+    <div class="pocket-content">
+      <div class="pocket-pulse"></div>
+      <p class="pocket-text">RESONANCE RUNNING</p>
+      <p class="pocket-sub">OLED Low Power Mode Active</p>
+      <button id="btnExitPocket" class="pocket-exit-btn">TAP ANYWHERE TO WAKE</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="header">
+      <div class="logo-box">
+        <span class="logo-icon">🔊</span>
+      </div>
+      <div class="header-titles">
+        <h1 class="brand-title">Reso<em>nance</em></h1>
+        <p class="brand-subtitle">MULTI-DEVICE LOW-LATENCY AUDIO RELAY</p>
+      </div>
+      <div class="status-indicator-pill" id="globalStatusPill">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">CONNECTING</span>
+      </div>
+    </header>
+
+    <!-- Role Switcher Pill -->
+    <div class="mode-switch-container">
+      <button id="tabReceiver" class="mode-btn active" data-mode="receiver">
+        <span class="mode-icon">🎧</span>
+        <span class="mode-label">LISTEN (RECEIVER)</span>
+      </button>
+      <button id="tabSender" class="mode-btn" data-mode="sender">
+        <span class="mode-icon">🎙️</span>
+        <span class="mode-label">BROADCAST (MIC)</span>
+      </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: RECEIVER (LISTEN TO ANDROID) -->
+    <!-- ========================================== -->
+    <main id="receiverSection" class="section-container">
+      
+      <!-- Hero Playout Card -->
+      <section class="neo-card hero-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label text-white">LIVE AUDIO STREAM</span>
+          <span class="pill-badge" id="rxStreamBadge">STANDBY</span>
+        </div>
+        
+        <p class="hero-description" id="rxStatusDetail">
+          Stream audio directly to your AirPods or Bluetooth headset. Tap below to begin.
+        </p>
+
+        <!-- Big Neobrutalist Action CTA -->
+        <button id="btnToggleListen" class="neo-btn btn-primary btn-large">
+          <span class="btn-icon" id="listenBtnIcon">▶</span>
+          <span id="listenBtnText">START LISTENING</span>
+        </button>
+
+        <!-- Live Audio Meter -->
+        <div class="meter-container">
+          <div class="meter-header">
+            <span class="meter-title">AUDIO LEVEL</span>
+            <span class="meter-value" id="rxLevelText">-100 dBFS (0%)</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="rxLevelBar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Delay Calibration Card -->
+      <section class="neo-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label">DELAY CALIBRATION (SYNC)</span>
+          <span class="pill-badge pill-accent" id="delayValueBadge">0 ms</span>
+        </div>
+        
+        <p class="card-caption">
+          Fine-tune playout delay to match AirPods / Bluetooth latency with the Android device.
+        </p>
+
+        <div class="slider-wrapper">
+          <input type="range" id="delaySlider" min="0" max="500" value="0" step="5" class="neo-slider">
+        </div>
+
+        <div class="sync-button-row">
+          <button id="btnDelayMinus50" class="neo-btn btn-secondary btn-small">-50 ms</button>
+          <button id="btnDelayMinus10" class="neo-btn btn-secondary btn-small">-10 ms</button>
+          <button id="btnDelayReset" class="neo-btn btn-secondary btn-small">0 ms</button>
+          <button id="btnDelayPlus10" class="neo-btn btn-secondary btn-small">+10 ms</button>
+          <button id="btnDelayPlus50" class="neo-btn btn-secondary btn-small">+50 ms</button>
+        </div>
+      </section>
+
+      <!-- Playback Controls & Power Saving -->
+      <section class="neo-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label">POWER & DISPLAY CONTROLS</span>
+        </div>
+
+        <div class="controls-grid">
+          <button id="btnTogglePocket" class="neo-btn btn-dark">
+            <span>🌙 OLED Cinema Mode</span>
+            <small>Blackout screen to save battery</small>
+          </button>
+          <button id="btnToggleWakeLock" class="neo-btn btn-outline">
+            <span id="wakeLockIcon">🔒</span>
+            <span id="wakeLockStatus">Keep Screen On: Active</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Diagnostics Card -->
+      <section class="neo-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label">STREAM DIAGNOSTICS</span>
+        </div>
+
+        <div class="diag-table">
+          <div class="diag-row">
+            <span class="diag-label">Server Connection</span>
+            <span class="diag-val" id="diagConn">Connecting...</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">PCM Format</span>
+            <span class="diag-val">24,000 Hz • 16-bit Mono</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">Packets Received</span>
+            <span class="diag-val" id="diagPackets">0</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">Data Transferred</span>
+            <span class="diag-val" id="diagData">0.00 MB</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">Buffer Depth</span>
+            <span class="diag-val" id="diagBuffer">0 ms</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: SENDER (BROADCAST MIC TO ANDROID) -->
+    <!-- ========================================== -->
+    <main id="senderSection" class="section-container hidden">
+      <section class="neo-card hero-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label text-white">MIC BROADCAST RELAY</span>
+          <span class="pill-badge" id="txStatusBadge">IDLE</span>
+        </div>
+
+        <p class="hero-description">
+          Broadcast your iPhone microphone in real time to the Android device speakers.
+        </p>
+
+        <button id="btnToggleBroadcast" class="neo-btn btn-primary btn-large">
+          <span class="btn-icon">🎙️</span>
+          <span id="broadcastBtnText">START MIC BROADCAST</span>
+        </button>
+
+        <div class="meter-container">
+          <div class="meter-header">
+            <span class="meter-title">MIC INPUT LEVEL</span>
+            <span class="meter-value" id="txLevelText">-100 dBFS (0%)</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="txLevelBar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="neo-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label">BROADCAST INFO</span>
+        </div>
+        <p class="card-caption">
+          Captures 24kHz Mono PCM audio via WebRTC media devices and relays it over the local WebSocket to Android's PlaybackService.
+        </p>
+      </section>
+    </main>
+
+    <!-- Neobrutalist Footer -->
+    <footer class="footer">
+      <div class="footer-badge">RESONANCE WEB RELAY</div>
+      <p class="footer-tagline">SAME SOUND. SAME SECOND.</p>
+      <p class="footer-love">Together <em>forever.</em> <span class="heart">♥</span></p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

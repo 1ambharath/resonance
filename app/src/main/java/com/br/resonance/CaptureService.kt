@@ -62,6 +62,28 @@ class CaptureService : Service() {
     private var recorder: AudioRecord? = null
     private var socket: DatagramSocket? = null
     private val targetAddresses = java.util.concurrent.CopyOnWriteArrayList<InetAddress>()
+    private var webRelayServer: WebRelayServer? = null
+
+    fun ensureWebRelayRunning(): WebRelayServer {
+        var server = webRelayServer
+        if (server == null) {
+            server = WebRelayServer(this, 8080).apply {
+                onClientCountChanged = { count ->
+                    updateDiagnostics(currentSnapshot.copy(connectedWebClients = count))
+                }
+                start()
+            }
+            webRelayServer = server
+        }
+        return server
+    }
+
+    fun getConnectedWebClients(): Int = webRelayServer?.connectedClientCount ?: 0
+
+    override fun onCreate() {
+        super.onCreate()
+        ensureWebRelayRunning()
+    }
 
     fun setTargetHosts(hosts: List<String>) {
         thread(name = "ResolveHostsThread") {
@@ -335,6 +357,9 @@ class CaptureService : Service() {
                             pcmBytes[byteIdx++] = (s and 0xFF).toByte()
                             pcmBytes[byteIdx++] = ((s shr 8) and 0xFF).toByte()
                         }
+
+                        // Broadcast raw PCM to connected iOS Safari / Web clients over WebSocket
+                        webRelayServer?.broadcastAudio(pcmBytes, readResult * 2)
 
                         // Multi-unicast transmission to all active receiver targets (up to 5 devices)
                         if (socket != null && targetAddresses.isNotEmpty()) {
@@ -633,6 +658,8 @@ class CaptureService : Service() {
     }
 
     override fun onDestroy() {
+        webRelayServer?.stop()
+        webRelayServer = null
         stopCaptureSession("Capture service destroyed")
         super.onDestroy()
     }

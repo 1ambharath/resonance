@@ -723,6 +723,32 @@ class ResonanceActivity : Activity() {
             }
         }
         discHeaderRow.addView(btnRescan)
+
+        val btnIosLink = Button(this).apply {
+            text = "📱 iOS / Web"
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            background = NeobrutalistTheme.button(this@ResonanceActivity, bgColor = NeobrutalistTheme.COLOR_SECONDARY, shadowOffsetDp = 2f)
+            setPadding(
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f),
+                0,
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f),
+                0
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 36f)
+            ).apply {
+                marginStart = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f)
+            }
+            setOnClickListener {
+                val clients = captureService?.getConnectedWebClients() ?: 0
+                IosConnectDialogHelper.showDialog(this@ResonanceActivity, port = 8080, connectedWebClients = clients)
+            }
+        }
+        discHeaderRow.addView(btnIosLink)
+
         discoveryCard.addView(discHeaderRow)
 
         val discDesc = TextView(this).apply {
@@ -1954,6 +1980,21 @@ class ResonanceActivity : Activity() {
         )
         sideBarContent.addView(itemShare)
 
+        // --- Individual Menu Item 2: Connect iOS / Web ---
+        val itemIos = buildSideBarMenuItem(
+            iconText = "📱",
+            iconBgColor = Color.parseColor("#FEF3C7"),
+            title = "Connect iOS / Web",
+            subtitle = "Scan QR to stream to iPhone or Safari",
+            trailingText = "›",
+            onClick = {
+                closeSideBar()
+                val clients = captureService?.getConnectedWebClients() ?: 0
+                IosConnectDialogHelper.showDialog(this@ResonanceActivity, port = 8080, connectedWebClients = clients)
+            }
+        )
+        sideBarContent.addView(itemIos)
+
         // --- Individual Menu Item 2: Check for Updates ---
         val itemUpdates = buildSideBarMenuItem(
             iconText = "🔄",
@@ -1968,11 +2009,11 @@ class ResonanceActivity : Activity() {
                 UpdateDialogHelper.showUpdateDialog(
                     this@ResonanceActivity,
                     ReleaseInfo(
-                        tagName = "v1.1.0",
-                        versionName = "1.1.0",
-                        versionCode = 2,
-                        name = "Resonance v1.1.0 — Minimal Sidebar & Performance",
-                        releaseNotes = "• Minimalist sidebar menu items replacing bulky cards\n• Consistent release APK signing configuration\n• Ultra-low latency dual audio relay optimizations\n• Cleaned up background service notifications",
+                        tagName = "v1.2.0",
+                        versionName = "1.2.0",
+                        versionCode = 3,
+                        name = "Resonance v1.2.0 — Zero-Install iOS & Web Audio Link",
+                        releaseNotes = "• Zero-install iOS Safari & Web receiver capability\n• Embedded local WebRelayServer on port 8080 (offline/hotspot ready)\n• High-contrast QR code pairing with native iOS Camera\n• Cream Neobrutalist Web client with delay sync & OLED Cinema mode\n• Microphone broadcast from iOS to Android",
                         htmlUrl = UpdateConfig.getWebReleasesUrl(),
                         apkDownloadUrl = null
                     ),
