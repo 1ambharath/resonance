@@ -1,4 +1,11 @@
 Gradle wrapper (Gradle 8.13) is now configured.
 Build directly with:
   ./gradlew assembleDebug
-Or open in Android Studio and run 'sender' on the OnePlus Pad 2.
+  ./gradlew assembleRelease
+
+Release Signing:
+  Keystore: app/resonance-release.jks
+  Alias: resonance
+  Password: resonance
+  (Can be overridden via KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD environment variables)
+

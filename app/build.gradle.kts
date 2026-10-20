@@ -16,6 +16,19 @@ android {
     }
 
     signingConfigs {
+        create("release") {
+            val keystoreFile = file("resonance-release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "resonance"
+                keyAlias = System.getenv("KEY_ALIAS") ?: "resonance"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: "resonance"
+                enableV1Signing = true
+                enableV2Signing = true
+            } else {
+                initWith(getByName("debug"))
+            }
+        }
         getByName("debug") {
             enableV1Signing = true
             enableV2Signing = true
@@ -28,7 +41,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
