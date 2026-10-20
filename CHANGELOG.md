@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-10-20
+
+### Added
+- **Zero-Install iOS Safari & Web Receiver**: Stream synchronized audio to iPhone, iPad, Mac, and PC companion devices via standard web browsers with no App Store installation or sideloading required.
+- **Embedded Web Relay Server (`WebRelayServer`)**: Android `CaptureService` embeds a microscopic HTTP and WebSocket server running on port `8080`, serving the web client and streaming binary 24 kHz 16-bit PCM frames offline and over personal hotspots.
+- **Dynamic Neobrutalist QR Code Pairing**: Android Sender displays a high-contrast QR code modal via ZXing (`QrCodeGenerator` and `IosConnectDialogHelper`), allowing iOS users to scan and connect in seconds with the native Camera app.
+- **Dedicated Android Quick Actions**: Added `[ 📱 iOS / Web ]` button in the Sender discovery header and `📱 Connect iOS / Web` in the navigation drawer.
+- **Cream Neobrutalist Web Client**: Fully responsive web app packaged inside the APK (`assets/web/`) styled with warm cream `#F5F0E8` canvas, 2px solid `#1A1A1A` borders, 4px hard drop shadows, and Fraunces editorial typography.
+- **Web Delay Calibration & Audio Meter**: Real-time RMS dBFS level meter and 0–500 ms playout delay calibration slider with fine-tuning step buttons (`-50ms`, `-10ms`, `0ms`, `+10ms`, `+50ms`).
+- **Screen Wake Lock & OLED Cinema Mode**: Automatic `navigator.wakeLock` integration to prevent iOS Safari from sleeping, plus a full-screen pitch black (`#000000`) low-power mode to protect OLED battery life.
+- **Microphone Broadcast (iOS to Android)**: Allows an iPhone user to broadcast live microphone audio over WebSocket to Android speakers.
+
+---
+
 ## [1.1.0] - 2026-10-20
 
 ### Changed

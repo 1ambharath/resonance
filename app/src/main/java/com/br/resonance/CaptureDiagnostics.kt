@@ -42,7 +42,8 @@ data class CaptureDiagnostics(
     val packetsSent: Long = 0L,
     val bytesSent: Long = 0L,
     val networkErrors: Long = 0L,
-    val isStreaming: Boolean = false
+    val isStreaming: Boolean = false,
+    val connectedWebClients: Int = 0
 ) {
     val durationSeconds: Long
         get() = if (sessionStartTimeMs > 0L) (System.currentTimeMillis() - sessionStartTimeMs) / 1000L else 0L

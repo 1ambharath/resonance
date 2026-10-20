@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="Apache 2.0 License" /></a>
   <a href="https://developer.android.com/about/versions/10"><img src="https://img.shields.io/badge/Android-10%2B_(API_29%2B)-green.svg" alt="Android 10+" /></a>
   <a href="app/build.gradle.kts"><img src="https://img.shields.io/badge/Kotlin-2.2.10-purple.svg" alt="Kotlin 2.2.10" /></a>
-  <a href="https://github.com/1ambharath/resonance/releases"><img src="https://img.shields.io/badge/Release-v1.0.0-orange.svg" alt="Release v1.0.0" /></a>
+  <a href="https://github.com/1ambharath/resonance/releases"><img src="https://img.shields.io/badge/Release-v1.2.0-orange.svg" alt="Release v1.2.0" /></a>
   <img src="https://img.shields.io/badge/Tests-13_Passed-success.svg" alt="13 Tests Passed" />
 </p>
 
@@ -146,7 +146,10 @@ For complete technical specifications, threading models, and packet schemas, see
 - **Live Diagnostics**: Real-time meters for RMS dBFS levels, silence detection, frame counters, throughput, and buffer depths.
 - **Built-in APK Sharing**: Share the installed APK directly with companion devices via Quick Share or Bluetooth via `ApkFileProvider`.
 - **In-App GitHub Update Engine**: Lightweight, rate-limited check against the GitHub Releases API with native install prompts.
-- **Cream Neobrutalist UI**: Handcrafted custom theme featuring bold 2px ink-black outlines, hard offset drop shadows, and responsive micro-interactions.
+- **Zero-Install iOS & Web Receiver**: Stream synchronized audio to iPhone, iPad, Mac, and PC companion devices via Mobile Safari without installing any app or sideloading.
+- **Embedded Offline Web Relay Server**: Android `CaptureService` runs an embedded micro HTTP and WebSocket server on port `8080`, serving the web app and streaming binary 24kHz PCM completely offline or over phone hotspots.
+- **Dynamic QR Code Pairing**: Instant pairing via high-contrast QR codes scanned by the native iOS Camera app.
+- **Cream Neobrutalist UI**: Handcrafted custom theme featuring bold 2px ink-black outlines, hard offset drop shadows, and responsive micro-interactions across both Android and the Web client.
 
 ---
 
@@ -255,6 +258,14 @@ Resonance is distributed independently via **GitHub Releases** without Google Pl
 1. Launch your media player (e.g. VLC, MX Player, or browser video) on the Sender.
 2. Listen to audio in both headsets.
 3. Adjust the **SYNC OFFSET** slider or tap the **-10ms / +10ms** micro-nudge buttons on the Receiver until dialogue aligns cleanly without echo.
+
+### 5. Connecting an iPhone / iPad / Web Receiver (Zero-Install)
+1. On the Android Sender, tap **`[ 📱 iOS / Web ]`** in the **AVAILABLE RECEIVERS** card (or open the sidebar and select **Connect iOS / Web**).
+2. Ensure the iOS device is on the same Wi-Fi or connected to your Android phone's Personal Hotspot.
+3. Open the native **Camera app on iPhone/iPad** and point it at the QR code on the Android screen.
+4. Tap the yellow Safari prompt to open the Resonance Web Receiver (`http://<android-ip>:8080`).
+5. Tap **START LISTENING**. Playback streams instantly to your AirPods or Bluetooth headset.
+6. Use the **0–500 ms delay slider** on iOS to match audio latency, or tap **🌙 OLED Cinema Mode** to black out the screen and save iPhone battery.
 
 ---
 
