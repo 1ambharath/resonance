@@ -216,7 +216,7 @@ For a full breakdown of platform restrictions, consult [docs/limitations.md](doc
 
 Resonance is distributed independently via **GitHub Releases** without Google Play Store dependencies:
 
-👉 **[Download Latest Resonance APK (v1.0.0)](https://github.com/1ambharath/resonance/releases/latest)**
+👉 **[Download Latest Resonance APK](https://github.com/1ambharath/resonance/releases/latest)**
 
 ### Release Artifacts & Cryptographic Checksums
 
