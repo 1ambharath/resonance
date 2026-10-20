@@ -1835,26 +1835,60 @@ class ResonanceActivity : Activity() {
         }
         headerRow.addView(logoView)
 
+        val (verCode, verName) = AppUpdateManager.getCurrentVersion(this)
+
         val headerTextCol = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         headerRow.addView(headerTextCol)
 
+        val titleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        headerTextCol.addView(titleRow)
+
         val titleView = TextView(this).apply {
             text = NeobrutalistTheme.createEditorialTitle("Reso", "nance")
-            textSize = 22f
+            textSize = 21f
             typeface = Typeface.SERIF
             setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
         }
-        headerTextCol.addView(titleView)
+        titleRow.addView(titleView)
+
+        val versionPill = TextView(this).apply {
+            text = "v$verName"
+            textSize = 9.5f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#EAE4D9"))
+                setStroke(NeobrutalistTheme.dpToPx(this@ResonanceActivity, 1f), NeobrutalistTheme.COLOR_BORDER)
+                cornerRadius = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f).toFloat()
+            }
+            setPadding(
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f),
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 2f),
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f),
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 2f)
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginStart = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f)
+            }
+        }
+        titleRow.addView(versionPill)
 
         val subtitleView = TextView(this).apply {
-            text = "AUDIO RELAY"
-            textSize = 9f
+            text = "LOW-LATENCY AUDIO RELAY"
+            textSize = 8.5f
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.10f
             setTextColor(NeobrutalistTheme.COLOR_MUTED)
+            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 1f), 0, 0)
         }
         headerTextCol.addView(subtitleView)
 
@@ -1890,70 +1924,102 @@ class ResonanceActivity : Activity() {
         }
         sideBarContent.addView(divider)
 
-        // --- Card 1: Share Application ---
-        val shareCard = createCardLayout(fillColor = NeobrutalistTheme.COLOR_SURFACE).apply {
-            (layoutParams as? LinearLayout.LayoutParams)?.bottomMargin = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 14f)
-        }
-
-        val shareEyebrow = TextView(this).apply {
-            text = "SHARE APPLICATION"
+        // Menu Section Eyebrow
+        val menuSectionHeader = TextView(this).apply {
+            text = "ACTIONS & LINKS"
             textSize = 10f
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.10f
             setTextColor(NeobrutalistTheme.COLOR_MUTED)
-            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f))
-        }
-        shareCard.addView(shareEyebrow)
-
-        val shareTitle = TextView(this).apply {
-            text = "📤 Share Resonance APK"
-            textSize = 15f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
-            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 4f))
-        }
-        shareCard.addView(shareTitle)
-
-        val shareDesc = TextView(this).apply {
-            text = "Send this installed APK directly to nearby companions via Quick Share, Bluetooth, or messaging."
-            textSize = 11f
-            setTextColor(Color.parseColor("#555555"))
-            setLineSpacing(0f, 1.2f)
-            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 12f))
-        }
-        shareCard.addView(shareDesc)
-
-        val btnShare = Button(this).apply {
-            text = "📤 SHARE WORKING APK"
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            background = NeobrutalistTheme.card(
-                this@ResonanceActivity,
-                fillColor = NeobrutalistTheme.COLOR_PRIMARY,
-                cornerRadiusDp = 8f,
-                shadowOffsetDp = 2f,
-                strokeWidthDp = 1.5f
+            setPadding(
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 2f),
+                0,
+                0,
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f)
             )
-            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f), 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f))
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            setOnClickListener {
+        }
+        sideBarContent.addView(menuSectionHeader)
+
+        // --- Individual Menu Item 1: Share Working APK ---
+        val itemShare = buildSideBarMenuItem(
+            iconText = "📤",
+            iconBgColor = Color.parseColor("#FFF2EB"),
+            title = "Share Working APK",
+            subtitle = "Send installed APK to nearby devices",
+            trailingText = "›",
+            onClick = {
                 closeSideBar()
                 shareInstalledApk()
             }
-        }
-        shareCard.addView(btnShare)
-        sideBarContent.addView(shareCard)
+        )
+        sideBarContent.addView(itemShare)
 
-        // --- Card 2: About & Updates Card (Moved to Side Bar) ---
-        buildAboutAndUpdatesSection(sideBarContent)
+        // --- Individual Menu Item 2: Check for Updates ---
+        val itemUpdates = buildSideBarMenuItem(
+            iconText = "🔄",
+            iconBgColor = Color.parseColor("#EDF7ED"),
+            title = "Check for Updates",
+            subtitle = "Current: v$verName (tap to check)",
+            trailingText = "›",
+            onClick = {
+                checkAppUpdatesManual()
+            },
+            onLongClick = {
+                UpdateDialogHelper.showUpdateDialog(
+                    this@ResonanceActivity,
+                    ReleaseInfo(
+                        tagName = "v1.1.0",
+                        versionName = "1.1.0",
+                        versionCode = 2,
+                        name = "Resonance v1.1.0 — Minimal Sidebar & Performance",
+                        releaseNotes = "• Minimalist sidebar menu items replacing bulky cards\n• Consistent release APK signing configuration\n• Ultra-low latency dual audio relay optimizations\n• Cleaned up background service notifications",
+                        htmlUrl = UpdateConfig.getWebReleasesUrl(),
+                        apkDownloadUrl = null
+                    ),
+                    currentVersionName = verName
+                )
+                true
+            }
+        )
+        sideBarContent.addView(itemUpdates)
+
+        // --- Individual Menu Item 3: GitHub Repository ---
+        val itemRepo = buildSideBarMenuItem(
+            iconText = "🌐",
+            iconBgColor = Color.parseColor("#F5F0E8"),
+            title = "GitHub Repository",
+            subtitle = "${UpdateConfig.GITHUB_OWNER}/${UpdateConfig.GITHUB_REPO}",
+            trailingText = "↗",
+            onClick = {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(UpdateConfig.getRepoWebUrl())).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(this@ResonanceActivity, "Could not open browser", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+        sideBarContent.addView(itemRepo)
 
         // --- Side Bar Footer ---
         val footerLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 20f), 0, 0)
+            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 28f), 0, 0)
         }
+
+        val footerBuild = TextView(this).apply {
+            text = "Resonance v$verName • Build $verCode"
+            textSize = 10f
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.08f
+            setTextColor(NeobrutalistTheme.COLOR_MUTED)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 3f))
+        }
+        footerLayout.addView(footerBuild)
 
         val footerEyebrow = TextView(this).apply {
             text = "SAME SOUND. SAME SECOND."
@@ -1994,177 +2060,93 @@ class ResonanceActivity : Activity() {
         root.addView(sideBarContainer)
     }
 
-    // =========================================================================
-    // ABOUT & GITHUB UPDATES SECTION
-    // =========================================================================
-    private fun buildAboutAndUpdatesSection(parent: LinearLayout) {
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+    private fun buildSideBarMenuItem(
+        iconText: String,
+        iconBgColor: Int,
+        title: String,
+        subtitle: String,
+        trailingText: String = "›",
+        onClick: () -> Unit,
+        onLongClick: (() -> Boolean)? = null
+    ): LinearLayout {
+        val itemLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             background = NeobrutalistTheme.card(
                 this@ResonanceActivity,
-                fillColor = NeobrutalistTheme.COLOR_SURFACE,
-                cornerRadiusDp = 14f,
-                shadowOffsetDp = 3f,
-                strokeWidthDp = 2f
+                fillColor = Color.WHITE,
+                cornerRadiusDp = 10f,
+                shadowOffsetDp = 2f,
+                strokeWidthDp = 1.5f
             )
             setPadding(
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 16f),
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 12f),
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 11f),
                 NeobrutalistTheme.dpToPx(this@ResonanceActivity, 14f),
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 16f),
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 14f)
+                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 11f)
             )
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 14f)
-                bottomMargin = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 4f)
+                bottomMargin = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f)
+            }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+            if (onLongClick != null) {
+                setOnLongClickListener { onLongClick() }
             }
         }
 
-        // 1. Header Row (Section Eyebrow + GitHub Releases Pill)
-        val headerRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f))
-        }
-        card.addView(headerRow)
-
-        val sectionTitle = TextView(this).apply {
-            text = "ABOUT & UPDATES"
-            textSize = 10f
-            typeface = Typeface.DEFAULT_BOLD
-            letterSpacing = 0.10f
-            setTextColor(NeobrutalistTheme.COLOR_MUTED)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        headerRow.addView(sectionTitle)
-
-        val badgeDist = TextView(this).apply {
-            text = "GITHUB RELEASE"
-            textSize = 9f
-            typeface = Typeface.DEFAULT_BOLD
-            letterSpacing = 0.08f
-            setTextColor(Color.parseColor("#555555"))
-            setPadding(
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f),
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 3f),
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f),
-                NeobrutalistTheme.dpToPx(this@ResonanceActivity, 3f)
-            )
+        val iconBadge = TextView(this).apply {
+            text = iconText
+            textSize = 15f
+            gravity = Gravity.CENTER
+            val badgeSize = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 34f)
+            layoutParams = LinearLayout.LayoutParams(badgeSize, badgeSize).apply {
+                marginEnd = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 12f)
+            }
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#F5F0E8"))
-                setStroke(NeobrutalistTheme.dpToPx(this@ResonanceActivity, 1f), NeobrutalistTheme.COLOR_BORDER)
-                cornerRadius = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f).toFloat()
+                setColor(iconBgColor)
+                setStroke(NeobrutalistTheme.dpToPx(this@ResonanceActivity, 1.2f), NeobrutalistTheme.COLOR_BORDER)
+                cornerRadius = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 7f).toFloat()
             }
         }
-        headerRow.addView(badgeDist)
-
-        // 2. Info Row: Version text & Check for Updates Button
-        val (verCode, verName) = AppUpdateManager.getCurrentVersion(this)
-
-        val mainInfoRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 10f))
-        }
-        card.addView(mainInfoRow)
+        itemLayout.addView(iconBadge)
 
         val textCol = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        mainInfoRow.addView(textCol)
+        itemLayout.addView(textCol)
 
-        val appNameView = TextView(this).apply {
-            text = "Resonance v$verName"
-            textSize = 15f
-            typeface = Typeface.SERIF
-            setTypeface(typeface, Typeface.BOLD)
+        val titleView = TextView(this).apply {
+            this.text = title
+            textSize = 13.5f
+            typeface = Typeface.DEFAULT_BOLD
             setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
         }
-        textCol.addView(appNameView)
+        textCol.addView(titleView)
 
-        val subInfoView = TextView(this).apply {
-            text = "Build $verCode • Low-latency dual audio relay"
+        val subView = TextView(this).apply {
+            this.text = subtitle
             textSize = 11f
             setTextColor(NeobrutalistTheme.COLOR_MUTED)
+            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 1f), 0, 0)
         }
-        textCol.addView(subInfoView)
+        textCol.addView(subView)
 
-        // 3. Action Buttons Row (Check for updates + View repo)
-        val actionsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            weightSum = 2f
-        }
-        card.addView(actionsRow)
-
-        val btnCheckUpdate = Button(this).apply {
-            text = "🔄 CHECK UPDATES"
-            textSize = 11f
+        val trailingView = TextView(this).apply {
+            this.text = trailingText
+            textSize = 15f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
-            background = NeobrutalistTheme.card(
-                this@ResonanceActivity,
-                fillColor = Color.WHITE,
-                cornerRadiusDp = 8f,
-                shadowOffsetDp = 2f,
-                strokeWidthDp = 1.5f
-            )
-            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f), 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.1f).apply {
-                marginEnd = NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f)
-            }
-            setOnClickListener {
-                checkAppUpdatesManual()
-            }
-            setOnLongClickListener {
-                UpdateDialogHelper.showUpdateDialog(
-                    this@ResonanceActivity,
-                    ReleaseInfo(
-                        tagName = "v1.1.0",
-                        versionName = "1.1.0",
-                        versionCode = 2,
-                        name = "Resonance v1.1.0 — Audio Clarity & Performance",
-                        releaseNotes = "• Ultra-low latency stereo audio pipeline optimizations\n• Improved auto-reconnection on Wi-Fi state change\n• Fixed occasional buffer underrun on Android 14\n• Cleaned up background service notifications",
-                        htmlUrl = UpdateConfig.getWebReleasesUrl(),
-                        apkDownloadUrl = null
-                    ),
-                    currentVersionName = verName
-                )
-                true
-            }
+            setTextColor(NeobrutalistTheme.COLOR_MUTED)
+            setPadding(NeobrutalistTheme.dpToPx(this@ResonanceActivity, 6f), 0, 0, 0)
         }
-        actionsRow.addView(btnCheckUpdate)
+        itemLayout.addView(trailingView)
 
-        val btnOpenRepo = Button(this).apply {
-            text = "🌐 GITHUB REPO"
-            textSize = 11f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(NeobrutalistTheme.COLOR_ON_SURFACE)
-            background = NeobrutalistTheme.card(
-                this@ResonanceActivity,
-                fillColor = Color.WHITE,
-                cornerRadiusDp = 8f,
-                shadowOffsetDp = 2f,
-                strokeWidthDp = 1.5f
-            )
-            setPadding(0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f), 0, NeobrutalistTheme.dpToPx(this@ResonanceActivity, 8f))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.9f)
-            setOnClickListener {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(UpdateConfig.getRepoWebUrl())).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    startActivity(intent)
-                } catch (_: Exception) {
-                    Toast.makeText(this@ResonanceActivity, "Could not open browser", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-        actionsRow.addView(btnOpenRepo)
-
-        parent.addView(card)
+        return itemLayout
     }
 
     private fun checkAppUpdatesOnStartup() {

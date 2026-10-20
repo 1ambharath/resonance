@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-10-20
+
+### Changed
+- **Minimal Sidebar Menu**: Replaced oversized cards in the navigation drawer with sleek, tactile individual menu items for "Share Working APK", "Check for Updates", and "GitHub Repository".
+- **Compact Drawer Header**: Added inline version pill badge (`v1.1.0`) and cleaner typography layout.
+
+### Fixed
+- **Release APK Installation & Signing**: Fixed "App not installed" error on Android devices by establishing a persistent project release keystore with long-term certificate validity.
+- **In-Place App Updates**: Enabled seamless updates between releases without signature mismatch conflicts (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
+- **CI Artifact Packaging**: Corrected GitHub Actions release workflow artifact resolution to guarantee signed release APKs are always packaged.
+
+---
+
 ## [1.0.0] - 2026-10-20
 
 ### Added
