@@ -1,6 +1,6 @@
 /**
  * Resonance Web Relay Client
- * Ultra-low latency PCM audio streaming over local WebSockets for iOS Safari.
+ * Ultra-low latency PCM audio streaming over local WebSockets for iOS Safari, iPadOS, and desktop browsers.
  */
 
 (function () {
@@ -9,6 +9,12 @@
   // Constants
   const SAMPLE_RATE = 24000; // Native Resonance Android capture rate
   const RECONNECT_INTERVAL_MS = 2000;
+
+  // Tiny base64 data URI of a 1-second silent WAV audio file.
+  // Playing this in an HTML5 <audio> element forces iOS / iPadOS to switch
+  // its audio session from AVAudioSessionCategoryAmbient to AVAudioSessionCategoryPlayback,
+  // bypassing the hardware/Control Center Silent Mode switch.
+  const SILENT_WAV_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 
   // DOM Elements
   const globalStatusPill = document.getElementById('globalStatusPill');
@@ -28,6 +34,11 @@
   const rxLevelBar = document.getElementById('rxLevelBar');
   const rxLevelText = document.getElementById('rxLevelText');
 
+  const volumeSlider = document.getElementById('volumeSlider');
+  const volumeValueBadge = document.getElementById('volumeValueBadge');
+  const btnTestSound = document.getElementById('btnTestSound');
+  const testSoundFeedback = document.getElementById('testSoundFeedback');
+
   const delaySlider = document.getElementById('delaySlider');
   const delayValueBadge = document.getElementById('delayValueBadge');
   const btnDelayMinus50 = document.getElementById('btnDelayMinus50');
@@ -45,10 +56,14 @@
   const wakeLockIcon = document.getElementById('wakeLockIcon');
 
   const diagConn = document.getElementById('diagConn');
+  const diagAudioState = document.getElementById('diagAudioState');
+  const diagHardwareRate = document.getElementById('diagHardwareRate');
+  const diagResampling = document.getElementById('diagResampling');
   const diagPackets = document.getElementById('diagPackets');
   const diagData = document.getElementById('diagData');
   const diagBuffer = document.getElementById('diagBuffer');
 
+  const micSecureWarning = document.getElementById('micSecureWarning');
   const btnToggleBroadcast = document.getElementById('btnToggleBroadcast');
   const broadcastBtnText = document.getElementById('broadcastBtnText');
   const txStatusBadge = document.getElementById('txStatusBadge');
@@ -60,12 +75,15 @@
   let isWsConnected = false;
   let isListening = false;
   let isBroadcasting = false;
-  let currentMode = 'receiver'; // 'receiver' or 'sender'
+  let currentMode = 'receiver';
 
   let audioCtx = null;
+  let masterGainNode = null;
+  let silentAudioEl = null;
   let nextPlayTime = 0;
   let userDelayMs = 0;
-  const baseJitterDelaySec = 0.035; // 35ms baseline jitter buffer
+  let masterVolume = 1.0;
+  const baseJitterDelaySec = 0.040; // 40ms baseline jitter buffer
 
   let packetsCount = 0;
   let bytesCount = 0;
@@ -80,20 +98,33 @@
   // Initialize
   function init() {
     setupTabSwitching();
+    setupVolumeControls();
     setupDelayControls();
     setupPocketMode();
     setupWakeLock();
+    checkSecurityContext();
     connectWebSocket();
 
     btnToggleListen.addEventListener('click', toggleListening);
     btnToggleBroadcast.addEventListener('click', toggleBroadcast);
   }
 
+  // Check if browser environment supports microphone capture
+  function checkSecurityContext() {
+    const isSecure = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+    if (!isSecure || !hasMediaDevices) {
+      if (micSecureWarning) {
+        micSecureWarning.classList.remove('hidden');
+      }
+    }
+  }
+
   // --- WebSocket Connection ---
   function connectWebSocket() {
     const loc = window.location;
     const wsProto = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Connect to same host:port with /ws path
     const wsUrl = `${wsProto}//${loc.host}/ws`;
 
     updateConnectionStatus('CONNECTING', 'warning');
@@ -139,19 +170,58 @@
     }
   }
 
-  // --- Audio Playout Engine (Web Audio API) ---
-  function initAudioContext() {
+  // --- Web Audio Initialization & iOS AudioSession Unlocker ---
+  function ensureAudioContext() {
     if (!audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AudioContextClass();
+
+      // Master Gain Node for volume control
+      masterGainNode = audioCtx.createGain();
+      masterGainNode.gain.value = masterVolume;
+      masterGainNode.connect(audioCtx.destination);
     }
+
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
+    }
+
+    // iOS Audio Session Unlock Trick:
+    // Play a silent audio element to force iOS into AVAudioSessionCategoryPlayback.
+    // This allows sound to play through speakers/headphones even if the hardware Silent Switch is on.
+    try {
+      if (!silentAudioEl) {
+        silentAudioEl = document.createElement('audio');
+        silentAudioEl.setAttribute('playsinline', '');
+        silentAudioEl.setAttribute('loop', '');
+        silentAudioEl.src = SILENT_WAV_URI;
+      }
+      silentAudioEl.play().catch(() => {});
+    } catch (_) {}
+
+    // Prime the hardware output with a 1-sample silent buffer directly in the user gesture
+    try {
+      const scratch = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+      const scratchSource = audioCtx.createBufferSource();
+      scratchSource.buffer = scratch;
+      scratchSource.connect(audioCtx.destination);
+      scratchSource.start(0);
+    } catch (_) {}
+
+    updateDiagnosticsCard();
+  }
+
+  function updateDiagnosticsCard() {
+    if (audioCtx) {
+      diagAudioState.textContent = audioCtx.state.toUpperCase();
+      diagAudioState.style.color = audioCtx.state === 'running' ? '#166534' : '#D97706';
+      diagHardwareRate.textContent = audioCtx.sampleRate.toLocaleString() + ' Hz';
+      diagResampling.textContent = `24kHz → ${Math.round(audioCtx.sampleRate / 1000)}kHz (1:1 Native)`;
     }
   }
 
   function toggleListening() {
-    initAudioContext();
+    ensureAudioContext();
 
     if (!isListening) {
       isListening = true;
@@ -161,7 +231,7 @@
       listenBtnText.textContent = 'STOP LISTENING';
       rxStreamBadge.textContent = 'STREAMING';
       rxStreamBadge.className = 'pill-badge pill-success';
-      rxStatusDetail.textContent = 'Live audio stream is active. Output routed to AirPods / Headphones.';
+      rxStatusDetail.textContent = 'Live audio stream is active. Output routed to AirPods / Headphones / Speakers.';
       acquireWakeLock();
     } else {
       isListening = false;
@@ -175,8 +245,29 @@
       rxLevelBar.style.width = '0%';
       rxLevelText.textContent = '-100 dBFS (0%)';
     }
+
+    updateDiagnosticsCard();
   }
 
+  // --- Linear Resampling Helper (24kHz -> Hardware Rate) ---
+  function resampleLinear(inputSamples, inputRate, outputRate) {
+    if (inputRate === outputRate || !outputRate) return inputSamples;
+    const ratio = outputRate / inputRate;
+    const outLength = Math.round(inputSamples.length * ratio);
+    const output = new Float32Array(outLength);
+
+    for (let i = 0; i < outLength; i++) {
+      const srcPos = i / ratio;
+      const srcIdx = Math.floor(srcPos);
+      const frac = srcPos - srcIdx;
+      const s0 = inputSamples[srcIdx] !== undefined ? inputSamples[srcIdx] : 0;
+      const s1 = inputSamples[srcIdx + 1] !== undefined ? inputSamples[srcIdx + 1] : s0;
+      output[i] = s0 + frac * (s1 - s0);
+    }
+    return output;
+  }
+
+  // --- Incoming Audio Packet Handler ---
   function handleIncomingPcmPacket(arrayBuffer) {
     packetsCount++;
     bytesCount += arrayBuffer.byteLength;
@@ -185,6 +276,7 @@
       diagPackets.textContent = packetsCount.toLocaleString();
       diagData.textContent = (bytesCount / (1024 * 1024)).toFixed(2) + ' MB';
       diagBuffer.textContent = userDelayMs + ' ms';
+      updateDiagnosticsCard();
     }
 
     if (!isListening || !audioCtx) return;
@@ -217,25 +309,80 @@
       rxLevelText.textContent = `${rmsDbfs} dBFS (${peakPercent}%)`;
     }
 
-    // Create an AudioBuffer and schedule playout
-    // Native Resonance stream is 24kHz Mono
-    const audioBuffer = audioCtx.createBuffer(1, sampleCount, SAMPLE_RATE);
-    audioBuffer.copyToChannel(float32Samples, 0, 0);
+    // Make sure context is active
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    // Resample incoming 24,000 Hz samples to match audioCtx.sampleRate (usually 48,000 Hz or 44,100 Hz).
+    // This avoids Mobile Safari's internal resampler dropping or muting mismatched buffers!
+    const resampledSamples = resampleLinear(float32Samples, SAMPLE_RATE, audioCtx.sampleRate);
+    const audioBuffer = audioCtx.createBuffer(1, resampledSamples.length, audioCtx.sampleRate);
+    audioBuffer.copyToChannel(resampledSamples, 0, 0);
 
     const source = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(audioCtx.destination);
+    source.connect(masterGainNode || audioCtx.destination);
 
     const now = audioCtx.currentTime;
     const targetDelaySec = baseJitterDelaySec + (userDelayMs / 1000.0);
 
-    // If nextPlayTime is in the past or way in future, re-anchor with target delay
-    if (nextPlayTime < now || nextPlayTime > (now + targetDelaySec + 0.5)) {
+    // Re-anchor nextPlayTime if it has fallen behind or drifted too far ahead
+    if (nextPlayTime <= now || nextPlayTime > (now + targetDelaySec + 0.35)) {
       nextPlayTime = now + targetDelaySec;
     }
 
     source.start(nextPlayTime);
     nextPlayTime += audioBuffer.duration;
+  }
+
+  // --- Volume & Test Sound Controls ---
+  function setupVolumeControls() {
+    volumeSlider.addEventListener('input', function () {
+      const val = parseInt(this.value, 10);
+      masterVolume = val / 100.0;
+      volumeValueBadge.textContent = val + '%';
+      if (masterGainNode) {
+        masterGainNode.gain.value = masterVolume;
+      }
+    });
+
+    btnTestSound.addEventListener('click', playTestSound);
+  }
+
+  // Plays a pleasant short chime to verify hardware audio output
+  function playTestSound() {
+    ensureAudioContext();
+
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      const now = audioCtx.currentTime;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.12); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.24); // G5
+
+      gain.gain.setValueAtTime(0.3 * masterVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.55);
+
+      testSoundFeedback.textContent = 'Chime playing! If silent, check iPad mute.';
+      testSoundFeedback.style.color = '#15803D';
+      setTimeout(() => {
+        testSoundFeedback.textContent = 'Tap to verify speakers';
+        testSoundFeedback.style.color = '';
+      }, 3000);
+    } catch (e) {
+      testSoundFeedback.textContent = 'Audio error: ' + e.message;
+      testSoundFeedback.style.color = '#DC2626';
+    }
   }
 
   // --- Delay Calibration Controls ---
@@ -281,12 +428,29 @@
       tabReceiver.classList.remove('active');
       senderSection.classList.remove('hidden');
       receiverSection.classList.add('hidden');
+      checkSecurityContext();
     }
   }
 
   // --- Broadcast Mode (Mic -> Android) ---
   async function toggleBroadcast() {
     if (!isBroadcasting) {
+      // Pre-flight check for Secure Context (HTTPS or localhost)
+      const isSecure = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isSecure) {
+        alert(
+          'Microphone Broadcast is unavailable over insecure local HTTP (http://...).\n\n' +
+          'Modern iOS/iPadOS browsers strictly require an HTTPS connection to access the microphone for privacy reasons.\n\n' +
+          'Please use Listen Mode on this device to receive audio from Android.'
+        );
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('navigator.mediaDevices.getUserMedia is not supported or is blocked in this browser context.');
+        return;
+      }
+
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -301,7 +465,6 @@
         micAudioCtx = new AudioContextClass({ sampleRate: SAMPLE_RATE });
         const micSource = micAudioCtx.createMediaStreamSource(micStream);
 
-        // Use ScriptProcessor (512 or 1024 samples) to capture PCM
         micProcessor = micAudioCtx.createScriptProcessor(1024, 1, 1);
 
         micProcessor.onaudioprocess = function (e) {
@@ -340,7 +503,7 @@
         txStatusBadge.textContent = 'TRANSMITTING';
         txStatusBadge.className = 'pill-badge pill-success';
       } catch (err) {
-        alert('Microphone access denied or unavailable: ' + err.message);
+        alert('Microphone access denied: ' + err.message);
       }
     } else {
       stopBroadcast();

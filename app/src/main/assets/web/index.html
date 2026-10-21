@@ -84,6 +84,35 @@
         </div>
       </section>
 
+      <!-- Audio Output & Device Tip Card -->
+      <section class="neo-card">
+        <div class="card-header-row">
+          <span class="eyebrow-label">VOLUME & OUTPUT TEST</span>
+          <span class="pill-badge pill-accent" id="volumeValueBadge">100%</span>
+        </div>
+
+        <div class="volume-row">
+          <span class="vol-icon">🔉</span>
+          <input type="range" id="volumeSlider" min="0" max="150" value="100" class="neo-slider volume-slider">
+          <span class="vol-icon">🔊</span>
+        </div>
+
+        <div class="test-sound-row">
+          <button id="btnTestSound" class="neo-btn btn-secondary btn-small">
+            <span>🔊 Test Audio Output</span>
+          </button>
+          <span class="test-feedback" id="testSoundFeedback">Tap to verify speakers</span>
+        </div>
+
+        <div class="ios-tip-box">
+          <span class="tip-icon">🔔</span>
+          <div class="tip-content">
+            <strong>iPadOS / iOS Silent Mode Tip:</strong>
+            <p>If you see the level bar moving but hear no audio, ensure <strong>Silent Mode</strong> is turned OFF in your iPad Control Center (bell icon) and physical volume is up.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Delay Calibration Card -->
       <section class="neo-card">
         <div class="card-header-row">
@@ -138,8 +167,16 @@
             <span class="diag-val" id="diagConn">Connecting...</span>
           </div>
           <div class="diag-row">
-            <span class="diag-label">PCM Format</span>
-            <span class="diag-val">24,000 Hz • 16-bit Mono</span>
+            <span class="diag-label">Audio Engine State</span>
+            <span class="diag-val" id="diagAudioState">UNINITIALIZED</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">Hardware Sample Rate</span>
+            <span class="diag-val" id="diagHardwareRate">Detecting...</span>
+          </div>
+          <div class="diag-row">
+            <span class="diag-label">Resampling Pipeline</span>
+            <span class="diag-val" id="diagResampling">24kHz → Hardware (Active)</span>
           </div>
           <div class="diag-row">
             <span class="diag-label">Packets Received</span>
@@ -169,8 +206,17 @@
         </div>
 
         <p class="hero-description">
-          Broadcast your iPhone microphone in real time to the Android device speakers.
+          Broadcast your iPhone/iPad microphone in real time to the Android device speakers.
         </p>
+
+        <!-- Warning when loaded over insecure HTTP -->
+        <div id="micSecureWarning" class="secure-warning-box hidden">
+          <span class="warning-icon">🔒</span>
+          <div class="warning-text">
+            <strong>HTTPS Required by iOS:</strong>
+            <p>Modern iOS/iPadOS browsers strictly block microphone access over local HTTP (<code>http://192.168.x.x</code>). Please switch to <strong>Listen Mode</strong> above to receive audio on this device.</p>
+          </div>
+        </div>
 
         <button id="btnToggleBroadcast" class="neo-btn btn-primary btn-large">
           <span class="btn-icon">🎙️</span>

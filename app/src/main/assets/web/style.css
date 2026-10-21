@@ -507,3 +507,98 @@ body {
 .hidden {
   display: none !important;
 }
+
+/* Volume & Test Sound */
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.vol-icon {
+  font-size: 16px;
+}
+
+.volume-slider {
+  flex: 1;
+}
+
+.test-sound-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.test-feedback {
+  font-size: 11px;
+  color: var(--muted-gray);
+  font-weight: 600;
+}
+
+/* iOS Silent Mode Tip Box */
+.ios-tip-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--warm-yellow-light);
+  border: 1.5px solid var(--ink-black);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  box-shadow: 2px 2px 0px var(--ink-black);
+  margin-top: 6px;
+}
+
+.tip-icon {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.tip-content {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #713F12;
+}
+
+.tip-content strong {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+/* Insecure Context Warning Box (Mic Tab) */
+.secure-warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #FEE2E2;
+  border: 2px solid var(--ink-black);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  color: #991B1B;
+}
+
+.warning-icon {
+  font-size: 20px;
+}
+
+.warning-text {
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.warning-text strong {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.warning-text code {
+  background: rgba(0,0,0,0.06);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
