@@ -2009,11 +2009,11 @@ class ResonanceActivity : Activity() {
                 UpdateDialogHelper.showUpdateDialog(
                     this@ResonanceActivity,
                     ReleaseInfo(
-                        tagName = "v1.2.0",
-                        versionName = "1.2.0",
-                        versionCode = 3,
-                        name = "Resonance v1.2.0 — Zero-Install iOS & Web Audio Link",
-                        releaseNotes = "• Zero-install iOS Safari & Web receiver capability\n• Embedded local WebRelayServer on port 8080 (offline/hotspot ready)\n• High-contrast QR code pairing with native iOS Camera\n• Cream Neobrutalist Web client with delay sync & OLED Cinema mode\n• Microphone broadcast from iOS to Android",
+                        tagName = "v1.2.1",
+                        versionName = "1.2.1",
+                        versionCode = 4,
+                        name = "Resonance v1.2.1 — Web Audio Fix for iPad & Silent Mode",
+                        releaseNotes = "• Fixed iPad/iOS silent audio playback via HTML5 AudioSession unlocker\n• Real-time Web Audio hardware rate resampling (24kHz to 48kHz)\n• Added master volume slider and audio test chime button\n• Fixed microphone broadcast pre-flight check on local HTTP\n• Updated iOS setup instructions and diagnostics",
                         htmlUrl = UpdateConfig.getWebReleasesUrl(),
                         apkDownloadUrl = null
                     ),

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-10-21
+
+### Fixed
+- **iOS/iPadOS AudioSession & Silent Mode Override (Fixes #3)**: Added HTML5 `<audio>` silent loop unlocker to force iOS WebKit from `Ambient` to `Playback` audio session category, unmuting Web Audio output through speakers and USB-C headphones regardless of the iPad Silent Mode switch.
+- **Web Audio Hardware Resampling (Fixes #3)**: Implemented real-time linear interpolation from 24,000 Hz stream to native hardware rate (e.g. 48,000 Hz) before creating `AudioBuffer`, eliminating WebKit internal buffer drops and silent rendering.
+- **Audio Output Verification & Volume Control**: Added master volume slider and a synthetic "Test Audio Output" chime button for instant confirmation of speaker/headphone routing.
+- **Microphone Secure Context Pre-flight (Fixes #3)**: Added `isSecureContext` and `navigator.mediaDevices` validation to prevent uncaught `TypeError: undefined is not an object` on local HTTP addresses, providing a clear HTTPS context guidance card.
+
+---
+
 ## [1.2.0] - 2026-10-20
 
 ### Added
@@ -18,12 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Web Delay Calibration & Audio Meter**: Real-time RMS dBFS level meter and 0–500 ms playout delay calibration slider with fine-tuning step buttons (`-50ms`, `-10ms`, `0ms`, `+10ms`, `+50ms`).
 - **Screen Wake Lock & OLED Cinema Mode**: Automatic `navigator.wakeLock` integration to prevent iOS Safari from sleeping, plus a full-screen pitch black (`#000000`) low-power mode to protect OLED battery life.
 - **Microphone Broadcast (iOS to Android)**: Allows an iPhone user to broadcast live microphone audio over WebSocket to Android speakers.
-
-### Fixed
-- **iOS/iPadOS AudioSession & Silent Mode Override (Fixes #3)**: Added HTML5 `<audio>` silent loop unlocker to force iOS WebKit from `Ambient` to `Playback` audio session category, unmuting Web Audio output through speakers and USB-C headphones regardless of the iPad Silent Mode switch.
-- **Web Audio Hardware Resampling (Fixes #3)**: Implemented real-time linear interpolation from 24,000 Hz stream to native hardware rate (e.g. 48,000 Hz) before creating `AudioBuffer`, eliminating WebKit internal buffer drops and silent rendering.
-- **Audio Output Verification & Volume Control**: Added master volume slider and a synthetic "Test Audio Output" chime button for instant confirmation of speaker/headphone routing.
-- **Microphone Secure Context Pre-flight (Fixes #3)**: Added `isSecureContext` and `navigator.mediaDevices` validation to prevent uncaught `TypeError: undefined is not an object` on local HTTP addresses, providing a clear HTTPS context guidance card.
 
 ---
 

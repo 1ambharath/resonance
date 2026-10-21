@@ -17,7 +17,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="Apache 2.0 License" /></a>
   <a href="https://developer.android.com/about/versions/10"><img src="https://img.shields.io/badge/Android-10%2B_(API_29%2B)-green.svg" alt="Android 10+" /></a>
   <a href="app/build.gradle.kts"><img src="https://img.shields.io/badge/Kotlin-2.2.10-purple.svg" alt="Kotlin 2.2.10" /></a>
-  <a href="https://github.com/1ambharath/resonance/releases"><img src="https://img.shields.io/badge/Release-v1.2.0-orange.svg" alt="Release v1.2.0" /></a>
+  <a href="https://github.com/1ambharath/resonance/releases"><img src="https://img.shields.io/badge/Release-v1.2.1-orange.svg" alt="Release v1.2.1" /></a>
   <img src="https://img.shields.io/badge/Tests-13_Passed-success.svg" alt="13 Tests Passed" />
 </p>
 
