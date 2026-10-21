@@ -12,6 +12,10 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioPlaybackCaptureConfiguration
 import android.media.AudioRecord
+import android.content.Context
+import android.media.AudioManager
+import android.media.AudioPlaybackConfiguration
+import android.media.AudioTrack
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Binder
@@ -19,6 +23,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.Process
+import android.util.Log
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -31,6 +37,7 @@ import kotlin.concurrent.thread
 class CaptureService : Service() {
 
     companion object {
+        private const val TAG = "CaptureService"
         const val ACTION_START = "com.br.resonance.START_CAPTURE"
         const val ACTION_STOP = "com.br.resonance.STOP_CAPTURE"
         const val ACTION_DISMISS = "com.br.resonance.DISMISS_CAPTURE"
@@ -60,6 +67,8 @@ class CaptureService : Service() {
     private var projection: MediaProjection? = null
     private var projectionCallback: MediaProjection.Callback? = null
     private var recorder: AudioRecord? = null
+    private var keepAliveTrack: AudioTrack? = null
+    private var playbackCallback: AudioManager.AudioPlaybackCallback? = null
     private var socket: DatagramSocket? = null
     private val targetAddresses = java.util.concurrent.CopyOnWriteArrayList<InetAddress>()
     private var webRelayServer: WebRelayServer? = null
@@ -232,6 +241,11 @@ class CaptureService : Service() {
             return
         }
 
+        // Step 2.5: Warm up system AudioPolicy submix with keep-alive track before building AudioRecord.
+        // This ensures the submix routing is actively bound even if audio starts AFTER capture.
+        startKeepAliveTrack()
+        registerPlaybackCallback()
+
         // Step 3: Configure AudioPlaybackCaptureConfiguration
         val captureConfig = try {
             AudioPlaybackCaptureConfiguration.Builder(projection!!)
@@ -333,6 +347,15 @@ class CaptureService : Service() {
                 while (running) {
                     val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
                     val now = System.currentTimeMillis()
+
+                    if (readResult == 0) {
+                        try {
+                            Thread.sleep(5)
+                        } catch (_: InterruptedException) {
+                            break
+                        }
+                        continue
+                    }
 
                     if (readResult > 0) {
                         frames++
@@ -532,6 +555,111 @@ class CaptureService : Service() {
             projection?.stop()
         } catch (_: Exception) {}
         projection = null
+
+        stopKeepAliveTrack()
+        unregisterPlaybackCallback()
+    }
+
+    /**
+     * Spins up a silent keep-alive AudioTrack matching AudioAttributes.USAGE_MEDIA.
+     *
+     * Problem Solved:
+     * Android's AudioPlaybackCapture API (AudioPolicyManager / AudioFlinger) creates an audio submix.
+     * If AudioRecord starts recording when NO app is playing audio, the remote submix is initialized
+     * in a dormant/unrouted state on many devices (OnePlus, Samsung, Xiaomi, Pixel).
+     * Subsequent playback started after capture will NOT route to the AudioRecord unless a USAGE_MEDIA
+     * stream was already active at capture initialization.
+     *
+     * By looping a silent (zero-amplitude) static PCM buffer with USAGE_MEDIA and CONTENT_TYPE_MUSIC,
+     * the system media submix is kept warm and actively routed from session start.
+     * Any media started before OR after audio sharing begins is immediately captured and streamed seamlessly.
+     */
+    private fun startKeepAliveTrack() {
+        try {
+            stopKeepAliveTrack()
+            val minBuf = AudioTrack.getMinBufferSize(
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            val bufSize = maxOf(minBuf, FRAME_SAMPLES * 2 * 4)
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(SAMPLE_RATE)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build()
+                )
+                .setBufferSizeInBytes(bufSize)
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .build()
+
+            val zeroPcm = ByteArray(bufSize)
+            track.write(zeroPcm, 0, zeroPcm.size)
+            val frameCount = bufSize / 2
+            track.setLoopPoints(0, frameCount, -1)
+            track.play()
+            keepAliveTrack = track
+            Log.d(TAG, "AudioPolicy keep-alive track started ($bufSize bytes)")
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to start keep-alive AudioTrack: ${e.message}")
+        }
+    }
+
+    private fun stopKeepAliveTrack() {
+        try {
+            if (keepAliveTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                keepAliveTrack?.stop()
+            }
+        } catch (_: Exception) {}
+        try {
+            keepAliveTrack?.release()
+        } catch (_: Exception) {}
+        keepAliveTrack = null
+    }
+
+    private fun registerPlaybackCallback() {
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            if (audioManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                playbackCallback = object : AudioManager.AudioPlaybackCallback() {
+                    override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
+                        super.onPlaybackConfigChanged(configs)
+                        val hasMediaPlayback = configs?.any {
+                            val usage = it.audioAttributes?.usage ?: AudioAttributes.USAGE_UNKNOWN
+                            usage == AudioAttributes.USAGE_MEDIA || usage == AudioAttributes.USAGE_GAME
+                        } == true
+                        if (hasMediaPlayback && currentSnapshot.isSilent) {
+                            Log.d(TAG, "Media playback detected while capture was silent; verifying keep-alive track")
+                            if (keepAliveTrack?.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                                startKeepAliveTrack()
+                            }
+                        }
+                    }
+                }
+                audioManager.registerAudioPlaybackCallback(playbackCallback!!, mainHandler)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not register AudioPlaybackCallback: ${e.message}")
+        }
+    }
+
+    private fun unregisterPlaybackCallback() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                playbackCallback?.let {
+                    (getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.unregisterAudioPlaybackCallback(it)
+                }
+            }
+        } catch (_: Exception) {}
+        playbackCallback = null
     }
 
     fun stopByUser() {

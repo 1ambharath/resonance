@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] - 2026-10-21
+
+### Fixed
+- **Late-Starting Audio Capture Initialization**: Fixed an issue where starting audio sharing before playing music caused capture to miss the media stream. `CaptureService` now spins up a lightweight, zero-amplitude keep-alive `AudioTrack` with `USAGE_MEDIA` to actively warm up Android's `AudioPolicyManager` submix routing prior to `AudioRecord` construction. Media started before OR after audio sharing begins is now captured and streamed immediately without restarting sharing.
+- **System Playback Watchdog**: Registered an `AudioManager.AudioPlaybackCallback` to monitor global audio playback changes and ensure submix integrity whenever new media/game sessions begin.
+- **Web App Negative Delay Slider & Fine Tuning**: Expanded the Web receiver delay slider to `-500 ms to +500 ms` with 1 ms resolution, matching the Android app's precision sync controls. Added `-1 ms` and `+1 ms` micro-nudge buttons, active cushion feedback (`Playout cushion: 80 ms (0 ms sync offset)`), and dynamic instant buffer trimming when decreasing delay.
+- **Web Audio Silence Re-anchoring**: Prevented empty `AudioBufferSourceNode` accumulation during prolonged silence on the Web receiver, ensuring that the playback cursor snaps cleanly to the calibrated target delay the instant active audio arrives.
+
+---
+
 ## [1.2.1] - 2026-10-21
 
 ### Fixed

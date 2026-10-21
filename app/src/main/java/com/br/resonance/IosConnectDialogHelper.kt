@@ -314,7 +314,7 @@ object IosConnectDialogHelper {
         instructionsCard.addView(createInstructionStep(activity, "1", "Connect to Same Wi-Fi or Hotspot", "Ensure both devices are on the same Wi-Fi, or connect iPhone to this phone's Personal Hotspot."))
         instructionsCard.addView(createInstructionStep(activity, "2", "Scan with iPhone Camera", "Open native iOS Camera and tap the yellow link to launch the Resonance Web Receiver."))
         instructionsCard.addView(createInstructionStep(activity, "3", "Tap 'Start Listening'", "Safari will output live audio to AirPods/headphones (ensure iPad Silent Mode is OFF in Control Center)."))
-        instructionsCard.addView(createInstructionStep(activity, "4", "Calibrate Delay Slider", "Use the 0–500 ms delay slider on iOS to align the audio between both listeners."))
+        instructionsCard.addView(createInstructionStep(activity, "4", "Calibrate Delay Slider", "Use the -500 to +500 ms sync offset slider on iOS / Web to align the audio between both listeners."))
 
         contentLayout.addView(instructionsCard)
 

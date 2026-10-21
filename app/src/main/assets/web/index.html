@@ -117,23 +117,28 @@
       <section class="neo-card">
         <div class="card-header-row">
           <span class="eyebrow-label">DELAY CALIBRATION (SYNC)</span>
-          <span class="pill-badge pill-accent" id="delayValueBadge">0 ms</span>
+          <span class="pill-badge pill-accent" id="delayValueBadge">+0 ms</span>
         </div>
         
-        <p class="card-caption">
-          Fine-tune playout delay to match AirPods / Bluetooth latency with the Android device.
+        <p class="card-caption" id="delayCushionLabel">
+          Playout cushion: 80 ms (+0 ms sync offset). Fine-tune playout delay (-500 to +500 ms) to align audio with Android.
         </p>
 
         <div class="slider-wrapper">
-          <input type="range" id="delaySlider" min="0" max="500" value="0" step="5" class="neo-slider">
+          <input type="range" id="delaySlider" min="-500" max="500" value="0" step="1" class="neo-slider">
         </div>
 
         <div class="sync-button-row">
           <button id="btnDelayMinus50" class="neo-btn btn-secondary btn-small">-50 ms</button>
           <button id="btnDelayMinus10" class="neo-btn btn-secondary btn-small">-10 ms</button>
-          <button id="btnDelayReset" class="neo-btn btn-secondary btn-small">0 ms</button>
+          <button id="btnDelayReset" class="neo-btn btn-accent btn-small">Reset 0</button>
           <button id="btnDelayPlus10" class="neo-btn btn-secondary btn-small">+10 ms</button>
           <button id="btnDelayPlus50" class="neo-btn btn-secondary btn-small">+50 ms</button>
+        </div>
+
+        <div class="sync-nudge-row">
+          <button id="btnDelayMinus1" class="neo-btn btn-secondary btn-small">◀ -1 ms Nudge</button>
+          <button id="btnDelayPlus1" class="neo-btn btn-secondary btn-small">+1 ms Nudge ▶</button>
         </div>
       </section>
 

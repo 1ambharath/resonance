@@ -271,6 +271,13 @@ body {
   border-width: 1.5px;
 }
 
+.btn-accent {
+  background-color: var(--warm-yellow);
+  color: var(--ink-black);
+  box-shadow: var(--shadow-sm);
+  border-width: 1.5px;
+}
+
 .btn-dark {
   background-color: var(--ink-black);
   color: #FFFFFF;
@@ -362,6 +369,17 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 4px;
+}
+
+.sync-nudge-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sync-nudge-row .neo-btn {
+  flex: 1;
 }
 
 .controls-grid {

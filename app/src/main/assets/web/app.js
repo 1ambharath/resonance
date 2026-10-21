@@ -41,11 +41,14 @@
 
   const delaySlider = document.getElementById('delaySlider');
   const delayValueBadge = document.getElementById('delayValueBadge');
+  const delayCushionLabel = document.getElementById('delayCushionLabel');
   const btnDelayMinus50 = document.getElementById('btnDelayMinus50');
   const btnDelayMinus10 = document.getElementById('btnDelayMinus10');
   const btnDelayReset = document.getElementById('btnDelayReset');
   const btnDelayPlus10 = document.getElementById('btnDelayPlus10');
   const btnDelayPlus50 = document.getElementById('btnDelayPlus50');
+  const btnDelayMinus1 = document.getElementById('btnDelayMinus1');
+  const btnDelayPlus1 = document.getElementById('btnDelayPlus1');
 
   const btnTogglePocket = document.getElementById('btnTogglePocket');
   const pocketOverlay = document.getElementById('pocketOverlay');
@@ -83,7 +86,9 @@
   let nextPlayTime = 0;
   let userDelayMs = 0;
   let masterVolume = 1.0;
-  const baseJitterDelaySec = 0.040; // 40ms baseline jitter buffer
+  let consecutiveSilentPackets = 0;
+  let needsReanchor = true;
+  const baseJitterDelaySec = 0.080; // 80ms baseline jitter buffer (matches Android baseCushionMs = 80)
 
   let packetsCount = 0;
   let bytesCount = 0;
@@ -225,6 +230,9 @@
 
     if (!isListening) {
       isListening = true;
+      needsReanchor = true;
+      consecutiveSilentPackets = 0;
+      nextPlayTime = 0;
       btnToggleListen.classList.remove('btn-primary');
       btnToggleListen.classList.add('btn-secondary');
       listenBtnIcon.textContent = '⏸';
@@ -235,6 +243,7 @@
       acquireWakeLock();
     } else {
       isListening = false;
+      nextPlayTime = 0;
       btnToggleListen.classList.remove('btn-secondary');
       btnToggleListen.classList.add('btn-primary');
       listenBtnIcon.textContent = '▶';
@@ -324,12 +333,27 @@
     source.buffer = audioBuffer;
     source.connect(masterGainNode || audioCtx.destination);
 
+    const baseCushionMs = 80;
+    const targetDelaySec = Math.max(0.015, (baseCushionMs + userDelayMs) / 1000.0);
     const now = audioCtx.currentTime;
-    const targetDelaySec = baseJitterDelaySec + (userDelayMs / 1000.0);
 
-    // Re-anchor nextPlayTime if it has fallen behind or drifted too far ahead
-    if (nextPlayTime <= now || nextPlayTime > (now + targetDelaySec + 0.35)) {
+    const isPacketSilent = peak < 0.0002;
+    if (isPacketSilent) {
+      consecutiveSilentPackets++;
+      // If sustained digital silence (>5 frames = 100ms), don't flood Web Audio with empty nodes;
+      // ensure playback cursor snaps cleanly to target delay the instant active audio arrives
+      if (consecutiveSilentPackets > 5) {
+        needsReanchor = true;
+        return;
+      }
+    } else {
+      consecutiveSilentPackets = 0;
+    }
+
+    // Re-anchor nextPlayTime if transitioning from silence, or if fallen behind or drifted too far ahead
+    if (needsReanchor || nextPlayTime <= now || nextPlayTime > (now + targetDelaySec + 0.25)) {
       nextPlayTime = now + targetDelaySec;
+      needsReanchor = false;
     }
 
     source.start(nextPlayTime);
@@ -396,18 +420,38 @@
     btnDelayReset.addEventListener('click', () => setDelay(0));
     btnDelayPlus10.addEventListener('click', () => adjustDelay(10));
     btnDelayPlus50.addEventListener('click', () => adjustDelay(50));
+    if (btnDelayMinus1) btnDelayMinus1.addEventListener('click', () => adjustDelay(-1));
+    if (btnDelayPlus1) btnDelayPlus1.addEventListener('click', () => adjustDelay(1));
   }
 
   function adjustDelay(delta) {
-    const newVal = Math.max(0, Math.min(500, userDelayMs + delta));
+    const newVal = Math.max(-500, Math.min(500, userDelayMs + delta));
     setDelay(newVal);
   }
 
   function setDelay(ms) {
+    const prevDelayMs = userDelayMs;
     userDelayMs = ms;
     delaySlider.value = ms;
-    delayValueBadge.textContent = ms + ' ms';
-    diagBuffer.textContent = ms + ' ms';
+    const sign = ms > 0 ? '+' : '';
+    delayValueBadge.textContent = `${sign}${ms} ms`;
+    diagBuffer.textContent = `${sign}${ms} ms`;
+
+    const baseCushionMs = 80;
+    const cushion = Math.max(15, baseCushionMs + userDelayMs);
+    if (delayCushionLabel) {
+      delayCushionLabel.textContent = `Playout cushion: ${cushion} ms (${sign}${ms} ms sync offset)`;
+    }
+
+    // Dynamic buffer trimming on negative delay or adjustment:
+    // Snaps playback playhead immediately without waiting for old queued delay
+    if (audioCtx && isListening) {
+      const now = audioCtx.currentTime;
+      const targetDelaySec = cushion / 1000.0;
+      if (ms < prevDelayMs || nextPlayTime > (now + targetDelaySec + 0.05)) {
+        nextPlayTime = now + targetDelaySec;
+      }
+    }
   }
 
   // --- Tab Mode Switcher ---
