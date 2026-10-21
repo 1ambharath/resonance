@@ -52,6 +52,37 @@ jobs:
             cp app/build/outputs/apk/debug/app-debug.apk release-assets/Resonance-${{ github.ref_name }}.apk
           fi
 
+      - name: Generate Release Notes from CHANGELOG
+        run: |
+          python3 -c "
+          import sys, re
+          tag = '${{ github.ref_name }}'
+          version = tag.lstrip('v')
+          try:
+              with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+                  content = f.read()
+              pattern = r'## \[' + re.escape(version) + r'\][^\n]*\n(.*?)(?=\n## \[|\n---\n\n##|\Z)'
+              match = re.search(pattern, content, re.DOTALL)
+              notes = match.group(1).strip() if match else ''
+          except Exception as e:
+              notes = ''
+
+          body = f'### 🚀 What\'s Changed in {tag}\n\n'
+          if notes:
+              body += f'{notes}\n\n'
+          else:
+              body += 'Multi-device low-latency audio relay for Android & Web.\n\n'
+
+          body += '---\n#### 📲 How to Install & Update\n'
+          body += f'1. Download `Resonance-{tag}.apk` below.\n'
+          body += '2. Open the downloaded APK on your Android device.\n'
+          body += '3. If prompted, allow installation from this source.\n'
+          body += '4. Tap **Install** or **Update**. Local settings and paired devices will be preserved!\n'
+
+          with open('release-notes.md', 'w', encoding='utf-8') as f:
+              f.write(body)
+          "
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -59,16 +90,6 @@ jobs:
           name: "Resonance ${{ github.ref_name }}"
           draft: false
           prerelease: false
-          generate_release_notes: true
-          body: |
-            ### Resonance ${{ github.ref_name }}
-            
-            Multi-device low-latency audio relay for Android.
-            
-            #### How to Install:
-            1. Download `Resonance-${{ github.ref_name }}.apk` below.
-            2. Open the downloaded APK on your Android device.
-            3. If prompted, allow installation from this source.
-            4. Tap **Install** or **Update**. Local settings will be preserved!
+          body_path: release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
