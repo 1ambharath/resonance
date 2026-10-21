@@ -83,6 +83,7 @@
   let audioCtx = null;
   let masterGainNode = null;
   let silentAudioEl = null;
+  let keepAliveSourceNode = null;
   let nextPlayTime = 0;
   let userDelayMs = 0;
   let masterVolume = 1.0;
@@ -191,6 +192,13 @@
       audioCtx.resume();
     }
 
+    // Modern iOS 17+ / Safari Audio Session API
+    if ('audioSession' in navigator) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch (_) {}
+    }
+
     // iOS Audio Session Unlock Trick:
     // Play a silent audio element to force iOS into AVAudioSessionCategoryPlayback.
     // This allows sound to play through speakers/headphones even if the hardware Silent Switch is on.
@@ -204,13 +212,18 @@
       silentAudioEl.play().catch(() => {});
     } catch (_) {}
 
-    // Prime the hardware output with a 1-sample silent buffer directly in the user gesture
+    // Constant Silent Buffer Loop:
+    // Keeps Web Audio engine actively running so Safari/Chrome NEVER suspends
+    // the audio context while waiting for Android to start playing audio!
     try {
-      const scratch = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
-      const scratchSource = audioCtx.createBufferSource();
-      scratchSource.buffer = scratch;
-      scratchSource.connect(audioCtx.destination);
-      scratchSource.start(0);
+      if (!keepAliveSourceNode) {
+        const silentBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+        keepAliveSourceNode = audioCtx.createBufferSource();
+        keepAliveSourceNode.buffer = silentBuffer;
+        keepAliveSourceNode.loop = true;
+        keepAliveSourceNode.connect(audioCtx.destination);
+        keepAliveSourceNode.start(0);
+      }
     } catch (_) {}
 
     updateDiagnosticsCard();
@@ -244,6 +257,10 @@
     } else {
       isListening = false;
       nextPlayTime = 0;
+      if (keepAliveSourceNode) {
+        try { keepAliveSourceNode.stop(); } catch (_) {}
+        keepAliveSourceNode = null;
+      }
       btnToggleListen.classList.remove('btn-secondary');
       btnToggleListen.classList.add('btn-primary');
       listenBtnIcon.textContent = '▶';
@@ -323,16 +340,6 @@
       audioCtx.resume();
     }
 
-    // Resample incoming 24,000 Hz samples to match audioCtx.sampleRate (usually 48,000 Hz or 44,100 Hz).
-    // This avoids Mobile Safari's internal resampler dropping or muting mismatched buffers!
-    const resampledSamples = resampleLinear(float32Samples, SAMPLE_RATE, audioCtx.sampleRate);
-    const audioBuffer = audioCtx.createBuffer(1, resampledSamples.length, audioCtx.sampleRate);
-    audioBuffer.copyToChannel(resampledSamples, 0, 0);
-
-    const source = audioCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(masterGainNode || audioCtx.destination);
-
     const baseCushionMs = 80;
     const targetDelaySec = Math.max(0.015, (baseCushionMs + userDelayMs) / 1000.0);
     const now = audioCtx.currentTime;
@@ -340,13 +347,11 @@
     const isPacketSilent = peak < 0.0002;
     if (isPacketSilent) {
       consecutiveSilentPackets++;
-      // If sustained digital silence (>5 frames = 100ms), don't flood Web Audio with empty nodes;
-      // ensure playback cursor snaps cleanly to target delay the instant active audio arrives
-      if (consecutiveSilentPackets > 5) {
-        needsReanchor = true;
-        return;
-      }
     } else {
+      if (consecutiveSilentPackets > 3) {
+        // Was silent and media just started playing: snap playhead directly to target delay
+        needsReanchor = true;
+      }
       consecutiveSilentPackets = 0;
     }
 
@@ -356,6 +361,15 @@
       needsReanchor = false;
     }
 
+    // Resample incoming 24,000 Hz samples to match audioCtx.sampleRate (usually 48,000 Hz or 44,100 Hz).
+    // This avoids Mobile Safari's internal resampler dropping or muting mismatched buffers!
+    const resampledSamples = resampleLinear(float32Samples, SAMPLE_RATE, audioCtx.sampleRate);
+    const audioBuffer = audioCtx.createBuffer(1, resampledSamples.length, audioCtx.sampleRate);
+    audioBuffer.copyToChannel(resampledSamples, 0, 0);
+
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(masterGainNode || audioCtx.destination);
     source.start(nextPlayTime);
     nextPlayTime += audioBuffer.duration;
   }
@@ -606,8 +620,14 @@
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && wakeLockEnabled && isListening) {
-        acquireWakeLock();
+      if (document.visibilityState === 'visible') {
+        if (wakeLockEnabled && isListening) {
+          acquireWakeLock();
+        }
+        if (audioCtx && isListening && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+          needsReanchor = true;
+        }
       }
     });
   }

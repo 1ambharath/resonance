@@ -62,6 +62,7 @@ class CaptureService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile private var running = false
+    @Volatile private var shouldRebindSubmix = false
     private var captureThread: Thread? = null
 
     private var projection: MediaProjection? = null
@@ -345,6 +346,19 @@ class CaptureService : Service() {
 
             try {
                 while (running) {
+                    if (shouldRebindSubmix) {
+                        shouldRebindSubmix = false
+                        try {
+                            if (recorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                                recorder?.stop()
+                            }
+                            recorder?.startRecording()
+                            Log.d(TAG, "Submix re-anchored successfully upon external playback start")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Submix re-anchor error: ${e.message}")
+                        }
+                    }
+
                     val readResult = recorder?.read(shortBuffer, 0, shortBuffer.size) ?: 0
                     val now = System.currentTimeMillis()
 
@@ -582,7 +596,8 @@ class CaptureService : Service() {
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             )
-            val bufSize = maxOf(minBuf, FRAME_SAMPLES * 2 * 4)
+            // Allocate a generous 1-second buffer (48,000 bytes = 24,000 frames) to satisfy HAL loop requirements
+            val bufSize = maxOf(minBuf, SAMPLE_RATE * 2)
             val track = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
@@ -604,10 +619,10 @@ class CaptureService : Service() {
             val zeroPcm = ByteArray(bufSize)
             track.write(zeroPcm, 0, zeroPcm.size)
             val frameCount = bufSize / 2
-            track.setLoopPoints(0, frameCount, -1)
+            val loopResult = track.setLoopPoints(0, frameCount, -1)
             track.play()
             keepAliveTrack = track
-            Log.d(TAG, "AudioPolicy keep-alive track started ($bufSize bytes)")
+            Log.d(TAG, "AudioPolicy keep-alive track started ($bufSize bytes, loopResult=$loopResult)")
         } catch (e: Exception) {
             Log.w(TAG, "Unable to start keep-alive AudioTrack: ${e.message}")
         }
@@ -637,7 +652,8 @@ class CaptureService : Service() {
                             usage == AudioAttributes.USAGE_MEDIA || usage == AudioAttributes.USAGE_GAME
                         } == true
                         if (hasMediaPlayback && currentSnapshot.isSilent) {
-                            Log.d(TAG, "Media playback detected while capture was silent; verifying keep-alive track")
+                            Log.d(TAG, "Media playback detected while capture was silent; triggering submix re-anchor")
+                            shouldRebindSubmix = true
                             if (keepAliveTrack?.playState != AudioTrack.PLAYSTATE_PLAYING) {
                                 startKeepAliveTrack()
                             }
